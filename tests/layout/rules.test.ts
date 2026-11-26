@@ -59,7 +59,7 @@ describe('page breaking rules', () => {
     expect(p0[p0.length - 2].text).toMatch(/[.]$/);
     expect(r.pages[1].rows[0].kind).toBe('contd');
     expect(r.pages[1].rows[0].row).toBe(-1);
-    expect(r.pages[1].rows[0].text).toBe("ANNA (CONT'D)");
+    expect(r.pages[1].rows[0].text).toBe("ANNA\u00a0(CONT'D)");
     expect(r.pages[1].rows[1].row).toBe(0);
   });
 
@@ -92,7 +92,7 @@ describe('page breaking rules', () => {
     ];
     const r = lay(lines);
     const names = r.pages[0].rows.filter((x) => x.type === 'character').map((x) => x.text);
-    expect(names).toEqual(['BOB', "BOB (CONT'D)", 'AMY', 'BOB', 'BOB']);
+    expect(names).toEqual(['BOB', "BOB\u00a0(CONT'D)", 'AMY', 'BOB', 'BOB']);
     expect(lay(lines, { autoContd: false }).pages[0].rows.filter((x) => x.text.includes('CONT')).length).toBe(0);
   });
 

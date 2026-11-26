@@ -281,7 +281,7 @@ export function createLayoutEngine() {
       for (let i = from; i < to; i++) {
         const seg = w.segs[i];
         let text = w.display.slice(seg.start, seg.end);
-        if (contd && i === w.segs.length - 1) text += ` ${opts.contdText}`;
+        if (contd && i === w.segs.length - 1) text += `\u00a0${opts.contdText}`;
         const row: Row = {
           lineId: w.line.id, type: w.line.type, kind: 'text', row: r, col: colFor(w, text, i), text,
           start: seg.start, end: seg.end, bold: w.spec.bold, italic: w.spec.italic, underline: w.spec.underline,
@@ -428,7 +428,7 @@ export function createLayoutEngine() {
       const nc = rowsOf(b.char);
       let done = 0;
       let placedChar = false;
-      const contdName = `${b.char.display.replace(/\s*\(CONT['’]D\)\s*$/i, '')} ${opts.contdText}`;
+      const contdName = `${b.char.display.replace(/\s*\(CONT['’]D\)\s*$/i, '')}\u00a0${opts.contdText}`;
       const placeRows = (count: number) => {
         let c = count;
         while (c > 0) {
@@ -445,7 +445,7 @@ export function createLayoutEngine() {
         const avail = L - r - sb - head;
         const rest = rows.length - done;
         if (rest <= avail) {
-          if (!placedChar) { place(b.char, 0, nc, sb, contd); placedChar = true; }
+          if (!placedChar) place(b.char, 0, nc, sb, contd);
           placeRows(rest);
           break;
         }
