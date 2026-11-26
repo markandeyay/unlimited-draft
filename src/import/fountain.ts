@@ -2,7 +2,8 @@
 import type { ElementType } from '../layout/geometry';
 import { SCENE_START } from '../editor/flow';
 
-export interface PlainLine { type: ElementType; text: string; dual?: 'left' | 'right' }
+export interface PlainMark { from: number; to: number; kind: 'bold' | 'italic' | 'underline' | 'strike' | 'color' | 'highlight'; value?: string }
+export interface PlainLine { type: ElementType; text: string; dual?: 'left' | 'right'; marks?: PlainMark[]; align?: 'left' | 'center' | 'right' }
 
 /** Write lines as Fountain. Used for the read-only mirror in the scripts repo. */
 export function toFountain(lines: readonly PlainLine[], title?: string): string {

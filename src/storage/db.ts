@@ -95,12 +95,12 @@ export async function markDirty(...keys: string[]) {
 const dirtyListeners = new Set<() => void>();
 export function onDirty(fn: () => void) { dirtyListeners.add(fn); return () => dirtyListeners.delete(fn); }
 
-export async function createProject(name: string, opts: { folderId?: string; lines?: Line[]; pdf?: Settings['pdf']; extraDocs?: { name: string; lines: Line[] }[] } = {}): Promise<ProjectFile> {
+export async function createProject(name: string, opts: { folderId?: string; lines?: Line[]; pdf?: Settings['pdf']; titlePageLines?: Line[]; extraDocs?: { name: string; lines: Line[] }[] } = {}): Promise<ProjectFile> {
   const id = newId();
   const at = nowIso();
   const script = makeDoc(id, 'script', 'Script', opts.lines?.length ? opts.lines : [makeLine('action', '')]);
   const pad = makeDoc(id, 'pad', 'Private Pad', [makeLine('text', '')]);
-  const title = makeDoc(id, 'titlePage', 'Title Page', defaultTitlePageLines(name, opts.pdf));
+  const title = makeDoc(id, 'titlePage', 'Title Page', opts.titlePageLines?.length ? opts.titlePageLines : defaultTitlePageLines(name, opts.pdf));
   const extra = (opts.extraDocs ?? []).map((d) => makeDoc(id, 'custom', d.name, d.lines));
   const project: ProjectFile = {
     schema: 1, id, name, path: `${slugify(name)}-${id.slice(-6).toLowerCase()}`, folderId: opts.folderId,

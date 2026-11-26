@@ -30,13 +30,13 @@ Nothing is blocking. Optional things only you can decide:
 - Revisions: tracking with colors and asterisks, accept/reject, mark and unmark, date and writers, current line history, timeline, snapshots (open, compare, restore).
 - Production: scene numbers, headers and footers, mores and continueds, separate scene, omit scene.
 - Customize: Editing (flow table), Display, Format, PDF, Page, Misc (commit interval, cache, zip export).
-- Import: Final Draft (.fdx), Fountain, PDF scripts (with a type preview you can correct), zip and JSON files.
+- Import: WriterDuet JSON and .wdz, Final Draft (.fdx), Fountain, PDF scripts (with a type preview you can correct).
 - Phone layout: library, read-only script with a big Export PDF button, Edit mode with an element picker, one menu sheet.
 - PWA: loads and edits with no network.
 
 ### What does not work or is thin
 
-- WriterDuet's own backup format (.wdz) was not inspected, so importing it is best effort. Export FDX or Fountain from WriterDuet instead; both import cleanly.
+- WriterDuet .wdz backups import from their last checkpoint only (the dialog warns if newer edits exist). Use WriterDuet's JSON export (File > Export > JSON) for an exact copy, including bold text, alignment and the title page.
 - Date & Writers is a dialog, not a hover tooltip.
 - Format > Column is left out (it needs a paid plugin in WriterDuet).
 - The page itself (text position, wrapping, spacing) matches WriterDuet pixel for pixel. The chrome around it is close but not identical: icons are Lucide, and the side panel shows full labels where WriterDuet truncates them.

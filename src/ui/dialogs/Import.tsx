@@ -21,12 +21,18 @@ async function readPdf(bytes: Uint8Array): Promise<Imported> {
   return { ...imp.classifyPdf(pages), format: 'PDF' };
 }
 
+const toLine = (l: PlainLine) => store.makeLine(l.type, l.text, {
+  ...(l.dual ? { dual: l.dual } : {}), ...(l.marks?.length ? { marks: l.marks } : {}), ...(l.align ? { align: l.align } : {}),
+});
+
 export default function ImportDialog() {
   const close = useApp((s) => s.closeDialog);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [name, setName] = useState('');
   const [format, setFormat] = useState('');
+  const [warning, setWarning] = useState('');
+  const [titlePage, setTitlePage] = useState<PlainLine[] | undefined>();
   const [lines, setLines] = useState<PlainLine[] | null>(null);
 
   const load = async (file: File | undefined) => {
@@ -40,6 +46,8 @@ export default function ImportDialog() {
       if (!r.lines.length) { setError('No script lines were found in that file.'); setLines(null); return; }
       setLines(r.lines);
       setFormat(r.format);
+      setWarning(r.warning ?? '');
+      setTitlePage(r.titlePage);
       setName((r.title && r.title.length < 80 ? r.title : '') || file.name.replace(/\.[^.]+$/, ''));
     } catch (e) {
       setError(`Could not read that file: ${(e as Error).message}`);
@@ -50,7 +58,8 @@ export default function ImportDialog() {
     if (!lines) return;
     setBusy(true);
     const p = await store.createProject(name.trim() || 'Imported Script', {
-      lines: lines.map((l) => store.makeLine(l.type, l.text, l.dual ? { dual: l.dual } : {})),
+      lines: lines.map(toLine),
+      titlePageLines: titlePage?.map(toLine),
       pdf: useSettings.getState().settings.pdf,
     });
     close();
@@ -80,6 +89,7 @@ export default function ImportDialog() {
         <>
           <Field label="Project name"><input className="ud-input" value={name} onChange={(e) => setName(e.target.value)} data-testid="import-name" /></Field>
           <p className={css.hint} style={{ marginTop: 0 }}>Read as {format}: {lines.length} lines. Fix any wrong guesses with the menus on the right.</p>
+          {warning && <p style={{ color: '#ffcc80', marginTop: 0 }} data-testid="import-warning">{warning}</p>}
           <div className={css.preview} data-testid="import-preview">
             {lines.slice(0, 1500).map((l, i) => (
               <div key={i} className={`${css.pv} ${css[`pv-${l.type}`] ?? ''}`}>

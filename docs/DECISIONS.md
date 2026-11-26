@@ -15,7 +15,7 @@ Running log of judgment calls made while building. Newest at the bottom.
 - **Screenshots and the exported PDF are not committed.** They show a private screenplay and WriterDuet's own UI artwork, and this repo is public. They are in `docs/writerduet-reference/` on this machine only (gitignored). `TOKENS.md` in that folder is the committed record of every measurement.
 - **The golden pagination fixture is scrambled.** `tests/layout/fixtures/wd-golden.json` was built from the exported PDF by `scripts/make-golden.py`. Every word is replaced by random letters of the same length (same word, same replacement). Line lengths, sentence ends and speaker identity are kept, so the fixture exercises the engine exactly like the real script, without publishing the script.
 - **Enter/Tab flow was not typed into WriterDuet.** The flow table follows SYSTEM_DESIGN.md Section 4.2, and WriterDuet's Customize > Editing panel confirmed "Enter/Tab traditional behavior" is on. I did not type into the Private Pad to probe each row, to keep the account strictly untouched. If a row feels different from WriterDuet, change it in Customize > Editing (it is one table in `src/editor/flow.ts`).
-- **WriterDuet's own project export format was not downloaded.** The import dialog reads Final Draft (.fdx) and Fountain (both exportable from WriterDuet's free tier), and also opens zip archives (.wdz) and JSON files and looks for a script inside. See "Import" below.
+- WriterDuet's export formats were inspected later, when the three projects were imported. See "Import" below.
 
 ### Geometry (WriterDuet's numbers win over the design doc's starting values)
 
@@ -84,7 +84,9 @@ Measured from the Quick Export PDF, see `TOKENS.md`:
 
 ### Import
 
-- **WriterDuet path used: FDX and Fountain parsers**, as the design doc allows, plus a best-effort reader for zip and JSON files (it looks for .fdx, .fountain or JSON line lists inside). WriterDuet's own backup format was not inspected, to avoid creating or changing anything in the account.
+- **WriterDuet path used: WriterDuet's JSON export** (File > Export > File Type: JSON). It was inspected on 2026-11-25. It lists every line with its type, text, bold/italic/underline ranges, alignment, a page marker on the first line of each page, and the title page lines. The importer maps it directly and carries the title page over. Importing the three existing scripts gave the same page starts WriterDuet reports.
+- **.wdz backups are also read, with a caveat.** A .wdz is a zip with `script.json` (project info plus an edit log) and one checkpoint file per document. The importer reads the checkpoint (lines keyed by a sortable id, control characters 1 and 2 around bold text). Edits made after the last checkpoint exist only in the edit log, which is not replayed, so the import dialog warns when it sees any. One of the three projects had no checkpoint at all. Prefer the JSON export.
+- FDX and Fountain parsers remain for files from other tools.
 - PDF import classifies by indent relative to the most common left edge, so PDFs from other screenwriting tools also work.
 
 ### Reports
