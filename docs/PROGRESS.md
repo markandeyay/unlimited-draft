@@ -13,7 +13,8 @@ Nothing is blocking. Optional things only you can decide:
 1. **Chrome extension permission.** If you want Claude to drive the live site again later, the Claude in Chrome extension may ask you to allow `unlimited-draft.vercel.app`.
 2. **Two files in your Downloads folder** were created during this work and can be deleted: `We_ll Be in Touch (1).pdf` (the WriterDuet export used for measurements) and `Deploy Test - 2026-11-25.pdf` (the live-site export test).
 3. **WriterDuet account.** Nothing was typed, renamed, moved or deleted. The "Last saved online" time in WriterDuet moved by a few minutes while menus were being opened; no content changed.
-4. **Enter/Tab feel.** The flow table follows the design doc. If any row feels different from WriterDuet, change it in Customize > Editing.
+4. **Node processes.** Early in the build one command stopped every running `node.exe` on this PC to free a port. If you had another Node app or dev server running at the time, restart it.
+5. **Enter/Tab feel.** The flow table follows the design doc. If any row feels different from WriterDuet, change it in Customize > Editing.
 
 ### What works
 
@@ -38,7 +39,7 @@ Nothing is blocking. Optional things only you can decide:
 - WriterDuet's own backup format (.wdz) was not inspected, so importing it is best effort. Export FDX or Fountain from WriterDuet instead; both import cleanly.
 - Date & Writers is a dialog, not a hover tooltip.
 - Format > Column is left out (it needs a paid plugin in WriterDuet).
-- The visual match with WriterDuet is close but not pixel perfect: icons are Lucide, and menu text weight differs slightly.
+- The page itself (text position, wrapping, spacing) matches WriterDuet pixel for pixel. The chrome around it is close but not identical: icons are Lucide, and the side panel shows full labels where WriterDuet truncates them.
 - If two devices edit the same line while both are offline, the newer edit wins and the older text is kept in that line's history rather than shown as a conflict.
 
 ### Verification done
@@ -65,7 +66,7 @@ Nothing is blocking. Optional things only you can decide:
 | 12 | Import | done (see .wdz note) |
 | 13 | Phone layout | done |
 | 14 | Full-text search | done |
-| 15 | Polish pass | in progress |
+| 15 | Polish pass | done (side-by-side with the WriterDuet screenshots: page text, wraps, toolbar, menus, Customize dialog) |
 
 ## How to run locally
 
