@@ -32,6 +32,13 @@ Measured from the Quick Export PDF, see `TOKENS.md`:
 - **Transition right edge is 7.5 in** (WriterDuet's screen CSS). The one transition in the sample PDF ("FADE OUT.") ends at 7.03 in, which does not match WriterDuet's own style sheet, so it looks like a per-line margin in that script. The golden test skips the x position of that one row.
 - Outline has 1 blank line before it (design doc). WriterDuet's style sheet uses 0.
 
+### Screen metrics
+
+- **The page on screen uses WriterDuet's letter-spacing (-0.3 px).** A glyph advances 9.2938 px while indents stay on the 0.1 in grid, exactly like WriterDuet. Left-aligned boxes are sized to hold their character count at that advance, so the browser wraps where the engine does. The PDF is unaffected: it draws at 7.2 pt per character.
+- Centered and right-aligned lines, dual dialogue names and the title page always take their line breaks from the engine, because their boxes are sized for alignment, not for character count.
+- Toolbar height is 51 px so the page starts at the same y as in WriterDuet.
+- Toolbar and rail icons are Lucide, plus three small drawn glyphs (a solid 3 by 3 grid for Cards, a bold "A" for Text, a bold "!" for Note) where Lucide has nothing close. No WriterDuet artwork is used.
+
 ### Layout engine
 
 - **"Incremental" is done with a wrap cache plus incremental decorations.** Wrapping is cached per line, so after one edit only that line is re-wrapped. The placement pass over the whole script is a few tenths of a millisecond, so it is simply rerun. On screen, only lines whose placement changed get new decorations. Measured in Playwright on a 148 page script: about 4 ms per keystroke (median), 5 ms at the 90th percentile.

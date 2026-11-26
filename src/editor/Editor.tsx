@@ -3,7 +3,7 @@ import { EditorState } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 import { useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../app/store';
-import { CHAR_PX, ELEMENT_TYPES, type ElementType, type PageGeometry } from '../layout/geometry';
+import { CHAR_PX, ELEMENT_TYPES, type ElementType, GLYPH_PX, LETTER_SPACING_PX, type PageGeometry } from '../layout/geometry';
 import { computeSceneNumbers } from '../layout/sceneNumbers';
 import { geometryFor, layoutOptionsFor, useSettings } from '../settings/settings';
 import { recordLocalVersion } from '../history/history';
@@ -19,22 +19,32 @@ import { commentRanges, findRanges, spellRanges } from './rangePlugin';
 import { docToLines, linesToDoc, elType } from './schema';
 import './editor.css';
 
+/**
+ * Box width on screen. Left-aligned boxes hold exactly `chars` glyphs (plus most of one more, never a full one),
+ * so the browser wraps where the engine does. Centered, right-aligned and fractional widths keep their
+ * size on the 0.1 in grid so the alignment edge is in the right place; those lines get explicit breaks.
+ */
+function boxPx(chars: number, align: string): number {
+  if (align !== 'left' || !Number.isInteger(chars)) return chars * CHAR_PX;
+  return (chars + 0.9) * GLYPH_PX;
+}
+
 /** CSS for element indents and widths, generated from the same geometry the PDF uses. */
 export function geometryCss(g: PageGeometry): string {
   const base = g.elements.action.left;
   const pagePad = base * CHAR_PX;
-  let css = `.pm-page .ProseMirror{padding-left:${pagePad}px;--page-left:${pagePad}px;padding-top:${(g.topPt * 96) / 72}px;width:${(g.widthPt * 96) / 72}px}`;
+  let css = `.pm-page .ProseMirror{letter-spacing:${LETTER_SPACING_PX}px;padding-left:${pagePad}px;--page-left:${pagePad}px;padding-top:${(g.topPt * 96) / 72}px;width:${(g.widthPt * 96) / 72}px}`;
   css += `.pm-page{width:${(g.widthPt * 96) / 72}px}`;
   for (const t of ELEMENT_TYPES) {
     const s = g.elements[t];
     const x = (s.left - base) * CHAR_PX;
-    css += `.pm-page .el-${t}{margin-left:${x}px;--ex:${x}px;width:${s.width * CHAR_PX + 0.5}px;`;
+    css += `.pm-page .el-${t}{margin-left:${x}px;--ex:${x}px;width:${boxPx(s.width, s.align)}px;`;
     css += `text-align:${s.align};text-transform:${s.uppercase ? 'uppercase' : 'none'};font-weight:${s.bold ? 700 : 400};`;
     css += `font-style:${s.italic ? 'italic' : 'normal'};text-decoration:${s.underline ? 'underline' : 'none'};`;
-    css += `text-indent:${s.hang ? -s.hang * CHAR_PX : 0}px;padding-top:${s.spaceBefore * 16}px;--sb:${s.spaceBefore * 16}px}`;
+    css += `text-indent:${s.hang ? -s.hang * GLYPH_PX : 0}px;padding-top:${s.spaceBefore * 16}px;--sb:${s.spaceBefore * 16}px}`;
   }
   const d = g.dual;
-  const lx = (d.leftCol - base) * CHAR_PX, rx = (d.rightCol - base) * CHAR_PX, w = d.width * CHAR_PX + 0.5, pi = d.parenIndent * CHAR_PX;
+  const lx = (d.leftCol - base) * CHAR_PX, rx = (d.rightCol - base) * CHAR_PX, w = boxPx(d.width, 'left'), pi = d.parenIndent * CHAR_PX;
   css += `.pm-page .el[data-dual=left]{float:left;clear:left;margin-left:${lx}px;--ex:${lx}px;width:${w}px}`;
   css += `.pm-page .el[data-dual=right]{clear:none;margin-left:${rx}px;--ex:${rx}px;width:${w}px}`;
   css += `.pm-page .el-character[data-dual]{text-align:center}`;
@@ -79,6 +89,7 @@ export function Editor({ document: docFile, readOnly = false }: { document: Docu
       hide,
       onlyIds: st.filter?.onlyIds ? new Set(st.filter.onlyIds) : null,
       numberFirstPage: s.page.firstPageNumbered,
+      explicitWraps: doc.kind === 'titlePage',
     };
   };
 

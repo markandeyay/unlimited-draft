@@ -18,6 +18,8 @@ export interface LayoutPluginOptions {
   /** When set, only these line ids are shown (Filter / report filters). */
   onlyIds: ReadonlySet<string> | null;
   numberFirstPage: boolean;
+  /** Always take line breaks from the engine (title page). */
+  explicitWraps: boolean;
 }
 
 export interface LayoutPluginState {
@@ -32,7 +34,7 @@ export interface LayoutPluginState {
 export const layoutKey = new PluginKey<LayoutPluginState>('layout');
 
 export const defaultLayoutPluginOptions = (): LayoutPluginOptions => ({
-  layout: {}, showPageBreaks: true, sceneNumbers: null, sceneNumberSide: 'both', hide: new Set(), onlyIds: null, numberFirstPage: false,
+  layout: {}, showPageBreaks: true, sceneNumbers: null, sceneNumberSide: 'both', hide: new Set(), onlyIds: null, numberFirstPage: false, explicitWraps: false,
 });
 
 const lineCache = new WeakMap<PMNode, LayoutLine>();
@@ -77,10 +79,17 @@ function pbDom(b: BreakInfo, inline: boolean, numberFirst: boolean): HTMLElement
  */
 const UNSAFE_WRAP = /[^\x20-\x7E]|[-/|?!][^\s\d?!.,:;'")\]-]/;
 const unsafeCache = new WeakMap<PMNode, boolean>();
-function unsafeWrap(node: PMNode): boolean {
+function unsafeWrap(node: PMNode, o: LayoutPluginOptions): boolean {
+  if (o.explicitWraps) return true;
   let u = unsafeCache.get(node);
-  if (u === undefined) { u = UNSAFE_WRAP.test(node.textContent); unsafeCache.set(node, u); }
-  return u;
+  if (u === undefined) {
+    // Centered and right-aligned lines sit in a wider box than their character count, so they also need explicit breaks.
+    u = UNSAFE_WRAP.test(node.textContent) || !!node.attrs.align || (!!node.attrs.dual && node.type.name === 'character');
+    unsafeCache.set(node, u);
+  }
+  if (u) return true;
+  const align = o.layout.geometry?.elements[elType(node)]?.align;
+  return align !== undefined && align !== 'left';
 }
 
 function signature(li: LineInfo | undefined, sn: string | undefined, side: string, rev: boolean, pb: boolean, unsafe: boolean): string {
@@ -98,7 +107,7 @@ function decosFor(pos: number, node: PMNode, li: LineInfo | undefined, o: Layout
   const end = pos + node.nodeSize;
   if (!li) return [Decoration.node(pos, end, { class: 'el-hidden' }, { id })];
   const out: Decoration[] = [];
-  const unsafe = unsafeWrap(node) && li.wraps.length > 0;
+  const unsafe = unsafeWrap(node, o) && li.wraps.length > 0;
   // Default spacing comes from CSS; a node decoration is only needed for exceptions.
   const def = o.layout.geometry?.elements[elType(node)]?.spaceBefore ?? -1;
   let cls = li.spaceBefore !== def ? `sb${li.spaceBefore}` : '';
@@ -178,7 +187,7 @@ export function createLayoutPlugin(initial: LayoutPluginOptions) {
     doc.forEach((node, pos) => {
       const id = node.attrs.id as string;
       const li = result.info.get(id);
-      sigs.set(id, signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks, unsafeWrap(node)));
+      sigs.set(id, signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks, unsafeWrap(node, o)));
       for (const d of decosFor(pos, node, li, o)) decos.push(d);
     });
     if (o.showPageBreaks) decos.push(endDeco(doc, result, linesPerPage));
@@ -205,7 +214,7 @@ export function createLayoutPlugin(initial: LayoutPluginOptions) {
       const id = node.attrs.id as string;
       const end = pos + node.nodeSize;
       const li = result.info.get(id);
-      const sig = signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks, unsafeWrap(node));
+      const sig = signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks, unsafeWrap(node, o));
       sigs.set(id, sig);
       let touched = prev.sigs.get(id) !== sig;
       if (!touched) for (const [a, b] of dirty) if (a <= end && b >= pos) { touched = true; break; }

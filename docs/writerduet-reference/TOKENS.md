@@ -34,7 +34,7 @@ Screenshots and the exported PDF in this folder are kept local only (gitignored)
 - Menu popup items: 12 px white, row 220 x 30 px, left padding 22 px, popup padding 5 px, radius 0 0 3px 3px, shadow `0 0 4px rgba(16,22,26,.4), 0 8px 24px rgba(16,22,26,.4)`. Shortcuts right aligned. Submenu arrow on the right.
 - Toolbar labels: 10 px weight 200, icon above label; each button 48 x 39 px, radius 4 px; toolbar 816 x 49 px, white, padding 4 px 0.
 - Panel rows: 12 px white, row 105 x 36 px, padding 4 px 16 px, icon then label.
-- Page text: Courier Prime 16 px (12 pt), line-height 16 px.
+- Page text: Courier Prime 16 px (12 pt), line-height 16 px. **letter-spacing: -0.3px**, so a glyph advances 9.2938 px on screen (measured with a DOM range: 60 characters = 557.63 px). Indents stay on the 9.6 px (0.1 in) grid. This is why the 576 px action box holds 61 characters, the 331 px dialogue box 35, the 360 px character box 38 and the 240 px parenthetical box 25.
 - Page counter: 10 px, `#a2b4c2` on workspace color, padding 3 5 3 0, bottom left of the page column.
 
 ## Layout (CSS px at 100% zoom)
@@ -42,7 +42,7 @@ Screenshots and the exported PDF in this folder are kept local only (gitignored)
 - Icon rail: 60 px wide, buttons 60 x 60, first button starts at y 28 (collapse arrow above it). Account button pinned at bottom.
 - Second panel: 105 px wide (rail + panel = 165 px). Header row about 36 px with a collapse caret and a kebab menu.
 - Menu bar: centered over the page, 816 px wide, top 5 px, height 36 px. Collapse caret at its left. Help "?" circle, a divider, then the upgrade button (not copied).
-- Element toolbar: 816 px wide, starts at y 45, attached to the page top, collapse caret at left.
+- Element toolbar: 816 px wide, 50.5 px tall, starts at y 45, attached to the page top, collapse caret at left.
 - Page: 816 x 1056 px (8.5 x 11 in at 96 dpi). Padding top 96, left 144, right 96. Gap between pages 20 px in workspace color.
 - Page number on screen: 48 px below the page top, right side.
 - Customize dialog: 500 px wide, radius 5 px, tab strip on top (Editing, Display, Format, Notifications, PDF, Page, Misc), close X top right.

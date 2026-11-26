@@ -1,4 +1,4 @@
-import { Check, ChevronRight, ChevronUp, CircleHelp } from 'lucide-react';
+import { Check, ChevronRight, CircleHelp, Triangle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../app/store';
 import { ELEMENT_LABELS, TOOLBAR_ORDER } from '../editor/flow';
@@ -247,7 +247,7 @@ export function MenuBar() {
   return (
     <div className={css.menubar} ref={ref} data-testid="menubar">
       <button className={css.caret} title={menubarOpen ? 'Hide menu' : 'Show menu'} onClick={() => set({ menubarOpen: !menubarOpen })}>
-        <ChevronUp size={18} strokeWidth={3} style={{ transform: menubarOpen ? undefined : 'rotate(180deg)' }} />
+        <Triangle size={10} fill="currentColor" strokeWidth={2} style={{ transform: menubarOpen ? undefined : 'rotate(180deg)' }} />
       </button>
       {menubarOpen && menus.map((m, i) => (
         <div

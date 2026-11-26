@@ -116,6 +116,12 @@ export const A4: PageGeometry = {
 /** Screen scale: 96 CSS px per inch. */
 export const PX_PER_PT = 96 / 72;
 export const CHAR_PX = 9.6;
+/**
+ * On screen WriterDuet sets letter-spacing: -0.3px on Courier Prime, so a glyph advances about 9.29 px
+ * while indents stay on the 9.6 px (0.1 in) grid. That is why 61 characters fit in its 576 px action box.
+ */
+export const LETTER_SPACING_PX = -0.3;
+export const GLYPH_PX = 9.2938;
 export const LINE_PX = 16;
 
 export function cloneGeometry(g: PageGeometry): PageGeometry {

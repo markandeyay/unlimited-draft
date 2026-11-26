@@ -1,12 +1,21 @@
 import {
-  ArrowLeftRight, ChevronUp, CircleAlert, Image as ImageIcon, ListTree, Megaphone, Menu, MessageCircle, MessagesSquare, Music,
-  Parentheses, Quote, TextQuote, Type, User, Video, type LucideIcon,
+  ArrowLeftRight, Image as ImageIcon, ListTree, Megaphone, Menu, MessageCircle, MessagesSquare, Music,
+  Parentheses, Quote, TextQuote, Triangle, User, Video, type LucideIcon,
 } from 'lucide-react';
 import { useApp } from '../app/store';
 import { ELEMENT_LABELS, TOOLBAR_ORDER } from '../editor/flow';
 import type { ElementType } from '../layout/geometry';
 import { actions } from './actions';
 import css from './shell.module.css';
+
+/** Bold letter glyphs for Text ("A") and Note ("!"), drawn as text so they read like solid icons. */
+const glyph = (ch: string) => (({ size = 17 }: { size?: number | string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+    <text x="12" y="20" textAnchor="middle" fontFamily="Georgia, 'Times New Roman', serif" fontWeight="700" fontSize="23" fill="currentColor">{ch}</text>
+  </svg>
+)) as unknown as LucideIcon;
+const TextGlyph = glyph('A');
+const NoteGlyph = glyph('!');
 
 // Lucide icons chosen to look close to WriterDuet's toolbar glyphs.
 export const ELEMENT_ICONS: Record<ElementType, LucideIcon> = {
@@ -17,8 +26,8 @@ export const ELEMENT_ICONS: Record<ElementType, LucideIcon> = {
   dialogue: MessageCircle,
   transition: ArrowLeftRight,
   shot: Video,
-  text: Type,
-  note: CircleAlert,
+  text: TextGlyph,
+  note: NoteGlyph,
   outline: ListTree,
   newAct: Quote,
   endAct: TextQuote,
@@ -41,7 +50,7 @@ export function Toolbar({ titlePage = false }: { titlePage?: boolean }) {
     return (
       <div className={`${css.toolbar} ${css.toolbarCollapsed}`} data-testid="toolbar">
         <button className={css.toolbarCaret} title="Show toolbar" onClick={() => set({ toolbarOpen: true })}>
-          <ChevronUp size={14} strokeWidth={3} style={{ transform: 'rotate(180deg)' }} />
+          <Triangle size={8} fill="currentColor" style={{ transform: 'rotate(180deg)' }} />
         </button>
       </div>
     );
@@ -49,7 +58,7 @@ export function Toolbar({ titlePage = false }: { titlePage?: boolean }) {
   return (
     <div className={css.toolbar} data-testid="toolbar" style={titlePage ? { justifyContent: 'center' } : undefined}>
       <button className={css.toolbarCaret} title="Hide toolbar" onClick={() => set({ toolbarOpen: false })} style={titlePage ? { position: 'absolute', left: 150 } : undefined}>
-        <ChevronUp size={18} strokeWidth={3} />
+        <Triangle size={11} fill="currentColor" strokeWidth={2} />
       </button>
       {types.map((t) => {
         const Icon = ELEMENT_ICONS[t];

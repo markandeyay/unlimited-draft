@@ -65,12 +65,12 @@
 .swatch { width: 12px; height: 12px; border-radius: 2px; margin-right: 8px; border: 1px solid rgba(255, 255, 255, 0.4); }
 
 /* Element toolbar */
-.toolbar { width: 816px; max-width: 100%; margin-top: 4px; background: var(--toolbar-bg); border-radius: 4px 4px 0 0; display: flex; align-items: center; padding: 4px 0; min-height: 0; border-bottom: 1px solid rgba(0, 0, 0, 0.12); position: relative; z-index: 6; flex: none; }
+.toolbar { width: 816px; max-width: 100%; margin-top: 4px; height: 51px; box-sizing: border-box; background: var(--toolbar-bg); border-radius: 4px 4px 0 0; display: flex; align-items: center; padding: 4px 0; min-height: 0; border-bottom: 1px solid rgba(0, 0, 0, 0.12); position: relative; z-index: 6; flex: none; }
 .toolbarCaret { width: 42px; display: flex; justify-content: center; color: var(--toolbar-fg); flex: none; }
 .toolBtn { width: 48px; height: 39px; flex: none; border-radius: 4px; color: var(--toolbar-fg); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; font-size: 10px; font-weight: 300; line-height: 14px; gap: 3px; padding-bottom: 2px; }
 .toolBtn:hover { background: rgba(116, 129, 139, 0.12); }
 .toolBtnActive { color: var(--accent); }
-.toolbarCollapsed { height: 14px; padding: 0; }
+.toolbar.toolbarCollapsed { height: 14px; padding: 0; }
 
 .scroller { flex: 1; min-height: 0; overflow: auto; scrollbar-gutter: stable both-edges; display: flex; justify-content: center; align-items: flex-start; position: relative; }
 .pageHolder { flex: none; position: relative; margin-bottom: 40px; }
