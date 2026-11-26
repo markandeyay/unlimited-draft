@@ -1,5 +1,5 @@
 import {
-  ArrowLeft, ArrowRight, ChartColumn, FileDown, Files, FileText, LayoutGrid, Menu, MessageSquareText, Pencil, Search, Wrench, X, type LucideIcon,
+  ArrowLeft, ArrowRight, ChartColumn, FileDown, Files, FileText, Menu, MessageSquareText, Pencil, Search, Wrench, X, type LucideIcon,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { type RailTab, activeDoc, useApp } from '../app/store';
@@ -13,9 +13,16 @@ import { AccountPanel, AnalysisPanel, Cards, CardsPanel, CommentsPanel, ProjectP
 import { Toolbar } from './Toolbar';
 import css from './shell.module.css';
 
+/** Nine filled squares. Drawn here because Lucide has no solid 3 by 3 grid. */
+const CardsIcon = (({ size = 24 }: { size?: number | string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    {[2, 9, 16].flatMap((y) => [2, 9, 16].map((x) => <rect key={`${x}-${y}`} x={x} y={y} width="6" height="6" rx="0.8" />))}
+  </svg>
+)) as unknown as LucideIcon;
+
 const RAIL: { id: RailTab; label: string; icon: LucideIcon; tip: string }[] = [
   { id: 'project', label: 'Project', icon: Files, tip: 'Project' },
-  { id: 'cards', label: 'Cards', icon: LayoutGrid, tip: 'Cards' },
+  { id: 'cards', label: 'Cards', icon: CardsIcon, tip: 'Cards' },
   { id: 'comments', label: 'Comments', icon: MessageSquareText, tip: 'Comments' },
   { id: 'analysis', label: 'Analysis', icon: ChartColumn, tip: 'Analysis' },
   { id: 'tools', label: 'Tools', icon: Wrench, tip: 'Tools & Revisions' },

@@ -60,15 +60,13 @@
 .pm-page .el[data-align="right"] { text-align: right; }
 .pm-page .el[data-align="left"] { text-align: left; }
 .pm-page .el[data-bullet]::before { content: "\2022"; position: absolute; left: -16px; top: var(--sb); text-indent: 0; }
-.pm-page .el[data-omitted] { color: #9aa3ab; }
-.pm-page .el-scene[data-omitted] { font-size: 0; }
-.pm-page .el-scene[data-omitted]::before { content: "OMITTED"; font-size: 16px; position: static; }
+.pm-page .el[data-omitted] { color: #9aa3ab; text-decoration: line-through; }
 
 .pm-page .el-scene[data-snl]::before { content: attr(data-snl); position: absolute; left: -72px; top: var(--sb); font-weight: 400; }
 .pm-page .el-scene[data-snr]::after { content: attr(data-snr); position: absolute; left: 566.4px; top: var(--sb); font-weight: 400; }
 
-.pm-page .el-image { min-height: 160px; background: var(--outline-bg) center / contain no-repeat; background-clip: content-box; color: #7a8791; }
-.pm-page .el-image:empty::before, .pm-page .el-image > br:only-child { content: "[Image]"; }
+.pm-page .el-image { min-height: 160px; background: var(--outline-bg) left top / contain no-repeat; background-clip: content-box; background-origin: content-box; color: #7a8791; font-size: 12px; }
+.pm-page .el-image.has-image { background-color: transparent; }
 
 .pm-page .rev-mark { position: absolute; left: calc(600px - var(--ex, 0px)); top: var(--sb); text-indent: 0; color: var(--page-fg); user-select: none; pointer-events: none; }
 .pm-page .el[data-rev="Blue"] { color: #1a56c4; }

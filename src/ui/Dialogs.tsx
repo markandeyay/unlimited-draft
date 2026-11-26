@@ -8,7 +8,7 @@ import { ELEMENT_LABELS, TOOLBAR_ORDER } from '../editor/flow';
 import { ELEMENT_SHORTCUTS, SHORTCUT_LABELS } from '../editor/keymap';
 import { getLayout } from '../editor/layoutPlugin';
 import { computeSceneNumbers } from '../layout/sceneNumbers';
-import { defaultPdfOptions, downloadBytes } from '../pdf/export';
+import { defaultPdfOptions, downloadBytes } from '../pdf/util';
 import { documentStats, wordCount } from '../reports/analyze';
 import { useSettings } from '../settings/settings';
 import * as store from '../storage/db';

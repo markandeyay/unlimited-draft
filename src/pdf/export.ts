@@ -6,21 +6,9 @@ import { type LayoutLine, type LayoutOptions, type LayoutResult, type Row, creat
 import { computeSceneNumbers } from '../layout/sceneNumbers';
 import { layoutOptionsFor } from '../settings/settings';
 import type { Comment, DocumentFile, InlineMark, Line, Settings } from '../storage/models';
+import type { PdfOptions } from './util';
 
-export interface PdfOptions {
-  includeTitlePage: boolean;
-  sceneNumbers: boolean;
-  revisionAsterisks: boolean;
-  /** PDF with notes: prints Note elements and comments. */
-  includeNotes: boolean;
-  hideShots?: boolean;
-  pageFrom?: number;
-  pageTo?: number;
-  comments?: Comment[];
-  /** Print only these line ids (filter reports). */
-  onlyIds?: Set<string>;
-  heading?: string;
-}
+export type { PdfOptions } from './util';
 
 export interface FontBytes { regular: ArrayBuffer | Uint8Array; bold: ArrayBuffer | Uint8Array; italic: ArrayBuffer | Uint8Array; boldItalic: ArrayBuffer | Uint8Array }
 
@@ -32,15 +20,6 @@ let fontLoader: () => Promise<FontBytes> = async () => {
 let fontCache: Promise<FontBytes> | null = null;
 export function setFontLoader(fn: () => Promise<FontBytes>) { fontLoader = fn; fontCache = null; }
 const fonts = () => (fontCache ??= fontLoader());
-
-export function defaultPdfOptions(s: Settings, doc?: DocumentFile): PdfOptions {
-  return {
-    includeTitlePage: s.pdf.includeTitlePage,
-    sceneNumbers: !!doc?.sceneNumbers.enabled,
-    revisionAsterisks: s.pdf.revisionAsterisks,
-    includeNotes: s.pdf.includeNotes,
-  };
-}
 
 export function toLayoutLines(doc: DocumentFile, withSceneNumbers: boolean, onlyIds?: Set<string>): LayoutLine[] {
   const sn = withSceneNumbers
@@ -65,13 +44,6 @@ export function layoutForPrint(doc: DocumentFile, s: Settings, o: PdfOptions): {
   const options = { ...layoutOptionsFor(s, doc), hide };
   const result = createLayoutEngine().layout(toLayoutLines(doc, o.sceneNumbers, o.onlyIds), options);
   return { result, options };
-}
-
-export function pdfFileName(title: string, s: Settings): string {
-  const d = new Date();
-  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const safe = title.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Untitled';
-  return `${safe} - ${s.pdf.draftName.trim() || date}.pdf`;
 }
 
 function expandTokens(t: string, ctx: { page: number; title: string; draft: string }): string {
@@ -263,18 +235,6 @@ export async function buildPdf(input: BuildInput): Promise<Uint8Array> {
   return pdf.save();
 }
 
-export function downloadBytes(bytes: Uint8Array, name: string, type = 'application/pdf') {
-  const blob = new Blob([bytes as BlobPart], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30_000);
-  (window as any).__lastDownload = { name, size: bytes.length };
-}
 
 /** Simple text report as a PDF (statistics, locations, shots). One string per row; long rows wrap. */
 export async function buildReportPdf(title: string, rows: string[], g: PageGeometry): Promise<Uint8Array> {

@@ -28,7 +28,9 @@ function writeEnv(values) {
   if (!next.COOKIE_SECRET) next.COOKIE_SECRET = randomBytes(48).toString('base64url');
   if (!next.ALLOWED_GITHUB_LOGIN) next.ALLOWED_GITHUB_LOGIN = 'markandeyay';
   if (!next.SCRIPTS_REPO) next.SCRIPTS_REPO = 'markandeyay/unlimited-draft-scripts';
-  writeFileSync(envPath, `${NAMES.filter((n) => next[n]).map((n) => `${n}=${next[n]}`).join('\n')}\n`);
+  // Keep any other keys already in the file (for example values written by the Vercel CLI).
+  const keys = [...NAMES.filter((n) => next[n]), ...Object.keys(next).filter((k) => !NAMES.includes(k))];
+  writeFileSync(envPath, `${keys.map((n) => `${n}=${next[n]}`).join('\n')}\n`);
   return next;
 }
 

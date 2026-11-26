@@ -3,7 +3,7 @@ import { useApp } from '../../app/store';
 import * as cmd from '../../editor/commands';
 import { currentLines, exec, getView } from '../../editor/controller';
 import { getLayout } from '../../editor/layoutPlugin';
-import { buildReportPdf, downloadBytes } from '../../pdf/export';
+import { downloadBytes } from '../../pdf/util';
 import { characterSceneIds, characterStats, dialogueIds, documentStats, nonDialogueIds, splitScenes } from '../../reports/analyze';
 import { geometryFromSettings, useSettings } from '../../settings/settings';
 import { makePdf } from '../actions';
@@ -18,6 +18,7 @@ function pageOf(): (id: string) => number {
 
 async function exportReport(title: string, rows: string[]) {
   const g = geometryFromSettings(useSettings.getState().settings);
+  const { buildReportPdf } = await import('../../pdf/export');
   const bytes = await buildReportPdf(title, rows, g);
   const p = useApp.getState().project;
   downloadBytes(bytes, `${p?.name ?? 'Script'} - ${title}.pdf`);

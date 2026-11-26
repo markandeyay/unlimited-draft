@@ -6,7 +6,7 @@ import { activeDoc, useApp } from '../app/store';
 import * as cmd from '../editor/commands';
 import { exec, flushEditor, getView } from '../editor/controller';
 import type { ElementType } from '../layout/geometry';
-import { type PdfOptions, buildPdf, defaultPdfOptions, downloadBytes, pdfFileName } from '../pdf/export';
+import { type PdfOptions, defaultPdfOptions, downloadBytes, pdfFileName } from '../pdf/util';
 import { useSettings } from '../settings/settings';
 import * as store from '../storage/db';
 import type { DocumentFile } from '../storage/models';
@@ -54,6 +54,7 @@ export async function makePdf(overrides: Partial<PdfOptions> = {}): Promise<{ by
   const st = settings();
   const options: PdfOptions = { ...defaultPdfOptions(st, cur.script), hideShots: s.hideShots, ...overrides };
   if (options.includeNotes && !options.comments) options.comments = await store.listComments(cur.script.id);
+  const { buildPdf } = await import('../pdf/export');
   const bytes = await buildPdf({
     title: s.project.name, script: cur.script, titlePage: cur.titlePage, settings: st, options, images: await loadImages(cur.script),
   });

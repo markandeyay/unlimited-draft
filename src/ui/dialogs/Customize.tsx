@@ -4,7 +4,7 @@ import { useApp } from '../../app/store';
 import { DEFAULT_FLOW, ELEMENT_LABELS, TOOLBAR_ORDER } from '../../editor/flow';
 import { toFountain } from '../../import/fountain';
 import type { ElementType } from '../../layout/geometry';
-import { downloadBytes } from '../../pdf/export';
+import { downloadBytes } from '../../pdf/util';
 import { defaultElements, defaultSettings, useSettings } from '../../settings/settings';
 import * as store from '../../storage/db';
 import { confirmDialog } from '../actions';

@@ -68,6 +68,13 @@ Measured from the Quick Export PDF, see `TOKENS.md`:
 - The proxy also checks the `Origin` header on writes, and the session cookie is only honored if its login equals `ALLOWED_GITHUB_LOGIN`.
 - The app opens without signing in and keeps data in that browser only. Nothing from the scripts repo is reachable without the session cookie.
 
+### Deployment
+
+- Production URL: https://unlimited-draft.vercel.app (Vercel project `unlimited-draft`, connected to the GitHub repo, so every push to main deploys).
+- GitHub OAuth App "Unlimited Draft" (GitHub > Settings > Developer settings > OAuth Apps). **"Expire user access tokens" is turned off**, so the session lasts until sign out. With expiring tokens the app would have to rotate a single-use refresh token across several parallel proxy requests, which is fragile for no real gain in a one-person app whose token sits in an encrypted HttpOnly cookie.
+- The client secret was copied with GitHub's copy button and piped from the clipboard into `vercel env add`, then the clipboard was cleared. It was never printed, typed into a page or written to a file. `COOKIE_SECRET` was generated with Node's crypto and piped the same way.
+- Environment variables are set for Production (as sensitive) and Development.
+
 ### Import
 
 - **WriterDuet path used: FDX and Fountain parsers**, as the design doc allows, plus a best-effort reader for zip and JSON files (it looks for .fdx, .fountain or JSON line lists inside). WriterDuet's own backup format was not inspected, to avoid creating or changing anything in the account.

@@ -7,7 +7,7 @@ import { CHAR_PX, ELEMENT_TYPES, type ElementType, type PageGeometry } from '../
 import { computeSceneNumbers } from '../layout/sceneNumbers';
 import { geometryFor, layoutOptionsFor, useSettings } from '../settings/settings';
 import { recordLocalVersion } from '../history/history';
-import { deviceName, saveDocument } from '../storage/db';
+import { db, deviceName, saveDocument } from '../storage/db';
 import type { DocumentFile, Line } from '../storage/models';
 import { autocompletePlugin } from './autocomplete';
 import { jumpToLine } from './commands';
@@ -146,6 +146,25 @@ export function Editor({ document: docFile, readOnly = false }: { document: Docu
     const view = new EditorView(host.current!, {
       state,
       editable: () => !readOnly,
+      nodeViews: {
+        image(node) {
+          const dom = document.createElement('div');
+          dom.className = 'el el-image';
+          dom.setAttribute('data-id', node.attrs.id);
+          dom.setAttribute('data-type', 'image');
+          let url = '';
+          const ref = node.attrs.imageRef as string | null;
+          if (ref) {
+            void db.assets.get(ref).then((a) => {
+              if (!a) return;
+              url = URL.createObjectURL(a.data instanceof Blob ? a.data : new Blob([a.data], { type: a.type }));
+              dom.style.backgroundImage = `url(${url})`;
+              dom.classList.add('has-image');
+            });
+          }
+          return { dom, contentDOM: dom, destroy: () => { if (url) URL.revokeObjectURL(url); } };
+        },
+      },
       attributes: { spellcheck: 'false', autocorrect: 'off', autocapitalize: 'off', 'data-testid': 'editor' },
       dispatchTransaction(tr) {
         const next = view.state.apply(tr);
