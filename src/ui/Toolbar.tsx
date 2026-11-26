@@ -17,6 +17,26 @@ const glyph = (ch: string) => (({ size = 17 }: { size?: number | string }) => (
 const TextGlyph = glyph('A');
 const NoteGlyph = glyph('!');
 
+/** What each line type is for, shown as a tooltip. */
+export const ELEMENT_TIPS: Record<ElementType | 'dual', string> = {
+  scene: 'Where and when the scene happens. Starts with INT. or EXT. and usually ends with DAY or NIGHT.',
+  action: 'What we see and hear: the setting and what happens.',
+  character: 'Who is speaking. Sits above the dialogue or a parenthetical.',
+  parenthetical: 'How a line is said. Sits under the character name or inside dialogue.',
+  dialogue: 'What the character says.',
+  transition: 'How we move to the next scene, like CUT TO:. Use sparingly.',
+  shot: 'A camera direction, like CLOSE ON. Use sparingly.',
+  text: 'Anything that does not fit another line type.',
+  note: 'A note to yourself. It is not printed in the PDF.',
+  outline: 'An outline line. It is not printed in the PDF.',
+  newAct: 'Starts a new act. For TV and stage scripts.',
+  endAct: 'Ends an act. For TV and stage scripts.',
+  lyrics: 'Dialogue that is sung.',
+  image: 'Place a picture in the script.',
+  sequence: 'A story beat that groups scenes.',
+  dual: 'Two characters speaking at the same time.',
+};
+
 // Lucide icons chosen to look close to WriterDuet's toolbar glyphs.
 export const ELEMENT_ICONS: Record<ElementType, LucideIcon> = {
   scene: ImageIcon,
@@ -60,18 +80,18 @@ export function Toolbar({ titlePage = false }: { titlePage?: boolean }) {
       <button className={css.toolbarCaret} title="Hide toolbar" onClick={() => set({ toolbarOpen: false })} style={titlePage ? { position: 'absolute', left: 150 } : undefined}>
         <Triangle size={11} fill="currentColor" strokeWidth={2} />
       </button>
-      {types.map((t) => {
+      {types.map((t, i) => {
         const Icon = ELEMENT_ICONS[t];
         const active = type === t;
         return (
           <button
             key={t}
-            className={`${css.toolBtn} ${active ? css.toolBtnActive : ''}`}
+            className={`${css.toolBtn} ${css.tip} ${i > 9 ? css.tipRight : ''} ${active ? css.toolBtnActive : ''}`}
+            data-tip={ELEMENT_TIPS[t]}
             data-testid={`el-${t}`}
             data-active={active || undefined}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => actions.setType(t)}
-            title={ELEMENT_LABELS[t]}
           >
             <Icon size={17} strokeWidth={2.2} fill={FILLED.has(t) ? 'currentColor' : 'none'} fillOpacity={t === 'scene' || t === 'image' ? 0.25 : 1} />
             {ELEMENT_LABELS[t]}
@@ -80,11 +100,11 @@ export function Toolbar({ titlePage = false }: { titlePage?: boolean }) {
       })}
       {!titlePage && (
         <button
-          className={`${css.toolBtn} ${dual ? css.toolBtnActive : ''}`}
+          className={`${css.toolBtn} ${css.tip} ${css.tipRight} ${dual ? css.toolBtnActive : ''}`}
+          data-tip={ELEMENT_TIPS.dual}
           data-testid="el-dual"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => (dual ? actions.exitDual() : actions.dual())}
-          title="Dual dialogue"
         >
           <MessagesSquare size={17} strokeWidth={2.2} fill="currentColor" />
           Dual

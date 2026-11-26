@@ -59,10 +59,18 @@ export interface AppState {
   auth: { checked: boolean; login?: string; avatar?: string };
   notice: string | null;
   libraryVersion: number;
+  /** Collapsed scene ids per document (a view preference kept in this browser). */
+  collapsed: Record<string, string[]>;
+  toggleCollapsed: (docId: string, lineId: string) => void;
+  setCollapsed: (docId: string, ids: string[]) => void;
   set: (p: Partial<AppState>) => void;
   openDialog: (name: string, props?: any) => void;
   closeDialog: () => void;
   toast: (msg: string) => void;
+}
+
+function loadCollapsed(): Record<string, string[]> {
+  try { return JSON.parse(localStorage.getItem('ud.collapsed') ?? '{}') ?? {}; } catch { return {}; }
 }
 
 export const useApp = create<AppState>((set) => ({
@@ -87,6 +95,17 @@ export const useApp = create<AppState>((set) => ({
   auth: { checked: false },
   notice: null,
   libraryVersion: 0,
+  collapsed: loadCollapsed(),
+  toggleCollapsed: (docId, lineId) => {
+    const cur = useApp.getState().collapsed[docId] ?? [];
+    useApp.getState().setCollapsed(docId, cur.includes(lineId) ? cur.filter((x) => x !== lineId) : [...cur, lineId]);
+  },
+  setCollapsed: (docId, ids) => {
+    const next = { ...useApp.getState().collapsed, [docId]: ids };
+    if (!ids.length) delete next[docId];
+    try { localStorage.setItem('ud.collapsed', JSON.stringify(next)); } catch { /* storage full or blocked */ }
+    set({ collapsed: next });
+  },
   set: (p) => set(p),
   openDialog: (name, props) => set({ dialog: { name, props } }),
   closeDialog: () => set({ dialog: null }),

@@ -97,3 +97,18 @@ Measured from the Quick Export PDF, see `TOKENS.md`:
 ### Spell check
 
 - The Hunspell dictionary files are copied to `public/dict/` (the npm package only exposes a Node loader). Character names and ALL CAPS words are not flagged.
+
+## 2026-11-25, small details pass
+
+Observed in WriterDuet (hovering, opening menus, collapsing and re-expanding one scene, widening and restoring the side panel; no script content was changed) and added:
+
+- **Collapse arrow beside a scene heading.** 28 px left of the heading text, shown when the heading is hovered or holds the cursor, and always shown while collapsed. A collapsed scene keeps its heading and hides everything up to the next heading; the page count on screen follows what is visible. Collapsed state is a view preference kept in this browser (`localStorage`), not in the script, so it never reaches the PDF or the scripts repo. If the cursor is inside a scene when it collapses, it moves to the heading.
+- **Hovered line band** (`rgba(175,180,43,0.06)`, fainter than the current line) and WriterDuet's blue selection color.
+- **Comment button in the left margin** that follows the hovered line. Clicking it puts the cursor on that line, opens the Comments panel and focuses the box.
+- **White tooltips** on the element toolbar (what each line type is for, in my own words) and on the rail (for example "Cards & Private Pad").
+- **Cards:** an expand arrow per card that shows the whole scene, the scene holding the cursor in white with the rest grey, a per-card menu (Jump to card, Focus on card, Copy, Cut, Paste, Duplicate, Remove), a panel menu (Show card previews, Expand all, Collapse all), sequence headings between groups, and a Private Pad row at the bottom.
+- **Project menu** reordered like WriterDuet's (Duplicate, Rename, Project Settings, Delete). **Every document row** has an options menu (Open, Rename, Copy to New Project, Delete) and a tooltip with its name and last edit time. "Open" shows its Ctrl+O hint when the panel is wide.
+
+Left out on purpose: Open in Split Pane, Default View, Make Document Public, Move to Folder (documents), Share Project, Color/add tags and Filter on cards, Show tags, card Dark mode, Group by Act. These belong to collaboration, tagging or features the design doc drops.
+
+Not copied because it could not be seen without typing in the account: the line type picker that WriterDuet shows after Enter on an empty line.

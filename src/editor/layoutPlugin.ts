@@ -20,6 +20,9 @@ export interface LayoutPluginOptions {
   numberFirstPage: boolean;
   /** Always take line breaks from the engine (title page). */
   explicitWraps: boolean;
+  /** Scene headings whose content is collapsed on screen. */
+  collapsed: ReadonlySet<string>;
+  onToggleFold?: (lineId: string) => void;
 }
 
 export interface LayoutPluginState {
@@ -34,7 +37,7 @@ export interface LayoutPluginState {
 export const layoutKey = new PluginKey<LayoutPluginState>('layout');
 
 export const defaultLayoutPluginOptions = (): LayoutPluginOptions => ({
-  layout: {}, showPageBreaks: true, sceneNumbers: null, sceneNumberSide: 'both', hide: new Set(), onlyIds: null, numberFirstPage: false, explicitWraps: false,
+  layout: {}, showPageBreaks: true, sceneNumbers: null, sceneNumberSide: 'both', hide: new Set(), onlyIds: null, numberFirstPage: false, explicitWraps: false, collapsed: new Set(),
 });
 
 const lineCache = new WeakMap<PMNode, LayoutLine>();
@@ -92,9 +95,9 @@ function unsafeWrap(node: PMNode, o: LayoutPluginOptions): boolean {
   return align !== undefined && align !== 'left';
 }
 
-function signature(li: LineInfo | undefined, sn: string | undefined, side: string, rev: boolean, pb: boolean, unsafe: boolean): string {
+function signature(li: LineInfo | undefined, sn: string | undefined, side: string, rev: boolean, pb: boolean, unsafe: boolean, fold = ''): string {
   if (!li) return 'hidden';
-  let s = `${li.spaceBefore}|${li.contd ? 1 : 0}|${unsafe ? li.wraps.join(',') : ''}|${sn ?? ''}${sn ? side : ''}|${rev ? 1 : 0}`;
+  let s = `${fold}|${li.spaceBefore}|${li.contd ? 1 : 0}|${unsafe ? li.wraps.join(',') : ''}|${sn ?? ''}${sn ? side : ''}|${rev ? 1 : 0}`;
   if (pb) {
     if (li.breakBefore) s += `|B${li.breakBefore.page},${li.breakBefore.filler},${li.breakBefore.more ? 1 : 0},${li.breakBefore.contdName ?? ''}`;
     for (const sp of li.splits) s += `|S${sp.offset},${sp.page},${sp.filler},${sp.more ? 1 : 0},${sp.contdName ?? ''}`;
@@ -113,6 +116,9 @@ function decosFor(pos: number, node: PMNode, li: LineInfo | undefined, o: Layout
   let cls = li.spaceBefore !== def ? `sb${li.spaceBefore}` : '';
   if (li.contd) cls += ' contd';
   if (unsafe) cls += ' nw';
+  const isScene = node.type.name === 'scene';
+  const isFolded = isScene && o.collapsed.has(id);
+  if (isFolded) cls += ' folded';
   const attrs: Record<string, string> = {};
   if (cls) attrs.class = cls.trim();
   const sn = o.sceneNumbers?.get(id);
@@ -121,6 +127,17 @@ function decosFor(pos: number, node: PMNode, li: LineInfo | undefined, o: Layout
     if (o.sceneNumberSide !== 'left') attrs['data-snr'] = sn;
   }
   if (cls || sn) out.push(Decoration.node(pos, end, attrs, { id }));
+  if (isScene) {
+    out.push(Decoration.widget(pos + 1, () => {
+      const s = document.createElement('span');
+      s.className = 'fold';
+      s.textContent = isFolded ? '\u25b8' : '\u25be';
+      s.title = isFolded ? 'Expand scene' : 'Collapse scene';
+      s.setAttribute('data-testid', 'fold');
+      s.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); o.onToggleFold?.(id); });
+      return s;
+    }, { id, side: -3, key: `fold-${id}-${isFolded ? 1 : 0}`, ignoreSelection: true, stopEvent: () => true }));
+  }
   if (node.attrs.revisionMarked) {
     out.push(Decoration.widget(pos + 1, () => {
       const s = document.createElement('span');
@@ -169,8 +186,12 @@ export function createLayoutPlugin(initial: LayoutPluginOptions) {
 
   function run(doc: PMNode, o: LayoutPluginOptions): { result: LayoutResult; linesPerPage: number } {
     const lines: LayoutLine[] = [];
+    let folded = false;
     doc.forEach((node) => {
       const l = toLayoutLine(node);
+      // A collapsed scene keeps its heading and hides everything up to the next heading.
+      if (l.type === 'scene') folded = o.collapsed.has(l.id);
+      else if (folded) return;
       if (o.onlyIds && !o.onlyIds.has(l.id)) return;
       lines.push(l);
     });
@@ -187,7 +208,7 @@ export function createLayoutPlugin(initial: LayoutPluginOptions) {
     doc.forEach((node, pos) => {
       const id = node.attrs.id as string;
       const li = result.info.get(id);
-      sigs.set(id, signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks, unsafeWrap(node, o)));
+      sigs.set(id, signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks, unsafeWrap(node, o), node.type.name === 'scene' ? (o.collapsed.has(id) ? 'F' : 'f') : ''));
       for (const d of decosFor(pos, node, li, o)) decos.push(d);
     });
     if (o.showPageBreaks) decos.push(endDeco(doc, result, linesPerPage));
@@ -214,7 +235,7 @@ export function createLayoutPlugin(initial: LayoutPluginOptions) {
       const id = node.attrs.id as string;
       const end = pos + node.nodeSize;
       const li = result.info.get(id);
-      const sig = signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks, unsafeWrap(node, o));
+      const sig = signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks, unsafeWrap(node, o), node.type.name === 'scene' ? (o.collapsed.has(id) ? 'F' : 'f') : '');
       sigs.set(id, sig);
       let touched = prev.sigs.get(id) !== sig;
       if (!touched) for (const [a, b] of dirty) if (a <= end && b >= pos) { touched = true; break; }

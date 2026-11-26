@@ -1,3 +1,4 @@
+import { MessageSquare } from 'lucide-react';
 import { history } from 'prosemirror-history';
 import { EditorState } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
@@ -68,6 +69,10 @@ export function Editor({ document: docFile, readOnly = false }: { document: Docu
   const hideShots = useApp((s) => s.hideShots);
   const hideNotes = useApp((s) => s.hideNotes);
   const filter = useApp((s) => s.filter);
+  const collapsed = useApp((s) => s.collapsed[docFile.id]);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const gutterRef = useRef<HTMLButtonElement>(null);
+  const hoverLine = useRef('');
 
   const geometry = useMemo(() => geometryFor(settings, docFile.kind), [settings, docFile.kind]);
   const css = useMemo(() => geometryCss(geometry), [geometry]);
@@ -90,6 +95,8 @@ export function Editor({ document: docFile, readOnly = false }: { document: Docu
       onlyIds: st.filter?.onlyIds ? new Set(st.filter.onlyIds) : null,
       numberFirstPage: s.page.firstPageNumbered,
       explicitWraps: doc.kind === 'titlePage',
+      collapsed: new Set(st.collapsed[doc.id] ?? []),
+      onToggleFold: (lineId) => useApp.getState().toggleCollapsed(doc.id, lineId),
     };
   };
 
@@ -246,11 +253,47 @@ export function Editor({ document: docFile, readOnly = false }: { document: Docu
         trackingColor: doc.revision.tracking ? doc.revision.color : null,
       });
     view.dispatch(tr);
-  }, [settings, hideShots, hideNotes, filter, docFile.sceneNumbers.enabled, docFile.sceneNumbers.locked, docFile.settings.sceneNumberSide, docFile.settings.sceneNumberStart, docFile.settings.sceneContinueds, docFile.revision.tracking, docFile.revision.color]);
+    // If the cursor ended up inside a collapsed scene, move it to that scene's heading.
+    const info = layoutKey.getState(view.state)?.result.info;
+    const $h = view.state.selection.$head;
+    if (info && $h.depth >= 1 && !info.has($h.node(1).attrs.id)) {
+      for (let i = $h.index(0); i >= 0; i--) {
+        const n = view.state.doc.child(i);
+        if (n.type.name === 'scene' && info.has(n.attrs.id)) { jumpToLine(n.attrs.id, n.content.size)(view.state, view.dispatch, view); break; }
+      }
+    }
+  }, [collapsed, settings, hideShots, hideNotes, filter, docFile.sceneNumbers.enabled, docFile.sceneNumbers.locked, docFile.settings.sceneNumberSide, docFile.settings.sceneNumberStart, docFile.settings.sceneContinueds, docFile.revision.tracking, docFile.revision.color]);
+
+  // A small comment button follows the hovered line in the left margin, like WriterDuet.
+  const onHover = (e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement).closest?.('.el') as HTMLElement | null;
+    const btn = gutterRef.current;
+    if (!el || !btn || !pageRef.current?.contains(el)) return;
+    hoverLine.current = el.getAttribute('data-id') ?? '';
+    btn.style.top = `${el.offsetTop + (parseFloat(getComputedStyle(el).paddingTop) || 0)}px`;
+    btn.style.display = 'flex';
+  };
+  const commentOnLine = () => {
+    const view = viewRef.current;
+    if (!view || !hoverLine.current) return;
+    jumpToLine(hoverLine.current)(view.state, view.dispatch, view);
+    useApp.setState({ rail: 'comments', panelOpen: true, sidebarHidden: false });
+    setTimeout(() => (document.querySelector('[data-testid=comment-input]') as HTMLTextAreaElement | null)?.focus(), 60);
+  };
 
   return (
-    <div className={`pm-page${docFile.kind === 'pad' ? ' pm-pad' : ''}${docFile.kind === 'titlePage' ? ' pm-title' : ''}`}>
+    <div
+      ref={pageRef}
+      className={`pm-page${docFile.kind === 'pad' ? ' pm-pad' : ''}${docFile.kind === 'titlePage' ? ' pm-title' : ''}${settings.display.highlightCurrentLine ? ' pm-hover' : ''}`}
+      onMouseMove={onHover}
+      onMouseLeave={() => { if (gutterRef.current) gutterRef.current.style.display = 'none'; }}
+    >
       <style>{css}</style>
+      {!readOnly && (
+        <button ref={gutterRef} className="gutter-cmt" title="Comment on this line" data-testid="gutter-comment" onMouseDown={(e) => e.preventDefault()} onClick={commentOnLine}>
+          <MessageSquare size={15} strokeWidth={1.6} />
+        </button>
+      )}
       <div ref={host} />
     </div>
   );

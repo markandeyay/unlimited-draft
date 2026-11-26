@@ -20,6 +20,7 @@ Nothing is blocking. Optional things only you can decide:
 
 - Library: unlimited projects, recents, folders (one level of nesting, drag a project onto a folder), sort, full-text search across every script with jump to line.
 - Editor: WriterDuet element set and toolbar, Enter/Tab flow, Ctrl+1 to Ctrl+0 element shortcuts, typing rules (INT./EXT., TO:, parenthetical), autocomplete (characters, extensions, scene intros, locations, times, transitions), dual dialogue, move lines, undo and redo, inline bold/italic/underline/strike, text color and highlight, alignment, bullets, page breaks, images.
+- Small details from WriterDuet: collapse arrow on scene headings, hovered line band, comment button in the margin, toolbar and rail tooltips, expandable cards with a per-card menu, document option menus.
 - Pages: live pagination that matches the PDF line for line, page gaps and numbers, (MORE) and (CONT'D), automatic (CONT'D), scene numbers (with lock and 12A style inserts), page count, dark page, zoom and text size.
 - PDF: export with title page, scene numbers, revision asterisks, notes, page range. Quick Export, Preview, Print, Email Document (share sheet or download plus mailto).
 - Layout engine verified against a real WriterDuet PDF export: all 10 pages match line for line (row and column).

@@ -1,8 +1,9 @@
 import {
-  Bold, ChartColumn, ChevronDown, CircleCheck, EllipsisVertical, ExternalLink, FileDown, FilePlus2, FileText, FileUp, FolderOpen, HardDrive,
+  Bold, ChartColumn, ChevronDown, ChevronRight, CircleCheck, EllipsisVertical, ExternalLink, FileDown, FilePlus2, FileText, FileUp, FolderOpen, HardDrive,
   History, Italic, LoaderCircle, LogOut, MapPin, MessageCircle, Moon, NotebookPen, Plus, Redo2, Save, ScrollText, SpellCheck, Strikethrough,
   Sun, Underline, Undo2, WholeWord, type LucideIcon,
 } from 'lucide-react';
+import type { Fragment } from 'prosemirror-model';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../app/store';
 import * as cmd from '../editor/commands';
@@ -30,9 +31,9 @@ function PanelShell({ title, menu, children, footer }: { title: string; menu?: R
   );
 }
 
-export function Row({ icon: Icon, label, onClick, active, right, testId }: { icon?: LucideIcon; label: string; onClick?: () => void; active?: boolean; right?: ReactNode; testId?: string }) {
+export function Row({ icon: Icon, label, onClick, active, right, testId, tip }: { icon?: LucideIcon; label: string; onClick?: () => void; active?: boolean; right?: ReactNode; testId?: string; tip?: string }) {
   return (
-    <button className={`${css.row} ${active ? css.rowActive : ''}`} onClick={onClick} title={label} data-testid={testId}>
+    <button className={`${css.row} ${active ? css.rowActive : ''}`} onClick={onClick} title={tip ?? label} data-testid={testId}>
       {Icon && <Icon size={17} strokeWidth={1.9} />}
       <span className={css.rowLabel}>{label}</span>
       {right}
@@ -40,7 +41,9 @@ export function Row({ icon: Icon, label, onClick, active, right, testId }: { ico
   );
 }
 
-function Kebab({ items }: { items: Parameters<typeof MenuList>[0]['items'] }) {
+type MenuItems = Parameters<typeof MenuList>[0]['items'];
+
+function Kebab({ items }: { items: MenuItems }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -93,9 +96,10 @@ export function ProjectPanel() {
     <PanelShell
       title={project.name}
       menu={<Kebab items={[
-        { label: 'Rename Project...', action: actions.renameProject },
-        { label: 'Duplicate Project...', action: actions.duplicateProject },
-        { label: 'Remove Project...', action: actions.removeProject },
+        { label: 'Duplicate Project', action: actions.duplicateProject },
+        { label: 'Rename Project', action: actions.renameProject },
+        { label: 'Project Settings', action: () => actions.customize('Editing') },
+        { label: 'Delete Project', action: actions.removeProject },
       ]} />}
       footer={<SaveStatus />}
     >
@@ -108,11 +112,18 @@ export function ProjectPanel() {
           active={d.id === active}
           testId={`doc-${d.kind}`}
           onClick={() => actions.switchDocument(d.id)}
-          right={d.kind === 'custom' ? (
+          tip={`Name: ${d.name}\nEdited: ${new Date(d.updatedAt).toLocaleString([], { month: '2-digit', day: '2-digit', year: '2-digit', hour: 'numeric', minute: '2-digit' })}`}
+          right={(
             <span className={css.rowMenu} onClick={(e) => e.stopPropagation()}>
-              <Kebab items={[{ label: 'Rename...', action: () => actions.renameDocument(d) }, { label: 'Remove...', action: () => actions.removeDocument(d) }]} />
+              <Kebab items={[
+                { label: 'Open', action: () => actions.switchDocument(d.id) },
+                { label: 'Rename', action: () => actions.renameDocument(d) },
+                { label: 'Copy to New Project', action: () => actions.copyDocumentToProject(d) },
+                'sep',
+                { label: 'Delete', action: () => actions.removeDocument(d), disabled: d.kind !== 'custom' },
+              ]} />
             </span>
-          ) : undefined}
+          )}
         />
       ))}
       <Row icon={Plus} label="Add Document" onClick={actions.addDocument} />
@@ -122,55 +133,128 @@ export function ProjectPanel() {
       <Row icon={FileText} label="Quick Export (PDF)" onClick={actions.quickExport} testId="quick-export" />
       <div className={css.divider} />
       <Row icon={FilePlus2} label="New Project" onClick={actions.newProject} />
-      <Row icon={FolderOpen} label="Open" onClick={actions.openLibrary} testId="open-library" />
+      <Row icon={FolderOpen} label="Open" onClick={actions.openLibrary} testId="open-library" right={<span className={css.rowHint}>Ctrl+O</span>} />
       <div className={css.divider} />
       <Row icon={HardDrive} label="Set External Backups" onClick={actions.externalBackups} />
     </PanelShell>
   );
 }
 
+let cardClipboard: Fragment | null = null;
+
+function sceneRangeById(id: string) {
+  const view = getView();
+  if (!view) return null;
+  let idx = -1;
+  view.state.doc.forEach((n, _p, i) => { if (n.attrs.id === id) idx = i; });
+  return idx < 0 ? null : cmd.sceneRange(view.state, idx);
+}
+
 /** Scene cards. Used in the narrow panel and full width in Card View. */
-export function Cards({ wide = false }: { wide?: boolean }) {
+export function Cards({ wide = false, previews = true, expanded, setExpanded }: {
+  wide?: boolean; previews?: boolean; expanded?: Set<string>; setExpanded?: (s: Set<string>) => void;
+}) {
   const docVersion = useApp((s) => s.docVersion);
   const activeDocId = useApp((s) => s.activeDocId);
+  const cursorLine = useApp((s) => s.cursor.lineId);
   const [drag, setDrag] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
+  const [menu, setMenu] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
-  const scenes = useMemo(() => splitScenes(currentLines()), [docVersion, activeDocId, tick]);
+  const [localExpanded, setLocalExpanded] = useState<Set<string>>(new Set());
+  const open = expanded ?? localExpanded;
+  const setOpen = setExpanded ?? setLocalExpanded;
+  const lines = useMemo(() => currentLines(), [docVersion, activeDocId, tick, cursorLine]);
+  const scenes = useMemo(() => splitScenes(lines), [lines]);
+  const refresh = () => setTimeout(() => setTick((t) => t + 1), 20);
 
-  const open = (s: SceneInfo) => {
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [menu]);
+
+  const cursorIdx = lines.findIndex((l) => l.id === cursorLine);
+  const activeScene = scenes.find((sc) => cursorIdx >= sc.start && cursorIdx < sc.end)?.id;
+
+  const jump = (sc: SceneInfo) => {
     useApp.setState({ viewMode: 'page' });
-    setTimeout(() => exec(cmd.jumpToLine(s.id)), 30);
+    setTimeout(() => exec(cmd.jumpToLine(sc.id)), 30);
   };
   const drop = (target: SceneInfo) => {
     if (!drag || drag === target.id) return;
     moveScene(drag, target.id);
     setDrag(null);
     setOver(null);
-    setTimeout(() => setTick((t) => t + 1), 20);
+    refresh();
   };
+  const toggle = (id: string) => { const n = new Set(open); if (n.has(id)) n.delete(id); else n.add(id); setOpen(n); };
+  const edit = (sc: SceneInfo, kind: 'copy' | 'cut' | 'paste' | 'duplicate' | 'remove') => {
+    const view = getView();
+    const r = sceneRangeById(sc.id);
+    if (!view || !r) return;
+    const slice = view.state.doc.slice(r.from, r.to).content;
+    const tr = view.state.tr;
+    if (kind === 'copy' || kind === 'cut') cardClipboard = slice;
+    if (kind === 'cut' || kind === 'remove') {
+      if (r.from === 0 && r.to === view.state.doc.content.size) { useApp.getState().toast('The last scene cannot be removed.'); return; }
+      tr.delete(r.from, r.to);
+    }
+    if (kind === 'duplicate') tr.insert(r.to, slice);
+    if (kind === 'paste') { if (!cardClipboard) { useApp.getState().toast('Copy or cut a card first.'); return; } tr.insert(r.to, cardClipboard); }
+    if (tr.docChanged) view.dispatch(tr);
+    refresh();
+  };
+  const cardMenu = (sc: SceneInfo): MenuItems => [
+    { label: 'Jump to card', action: () => jump(sc) },
+    { label: 'Focus on card', action: () => useApp.setState({ viewMode: 'page', filter: { label: `Scene: ${sc.heading}`, onlyIds: lines.slice(sc.start, sc.end).map((l) => l.id) } }) },
+    'sep',
+    { label: 'Copy Card', action: () => edit(sc, 'copy') },
+    { label: 'Cut Card', action: () => edit(sc, 'cut') },
+    { label: 'Paste Cards', action: () => edit(sc, 'paste') },
+    { label: 'Duplicate Card', action: () => edit(sc, 'duplicate') },
+    { label: 'Remove Card', action: () => edit(sc, 'remove') },
+  ];
+
   let lastSeq: string | undefined;
   return (
     <div className={wide ? css.cardsGrid : css.cardsPanel} data-testid="cards">
       {scenes.length === 0 && <div className={css.empty} style={wide ? { gridColumn: '1 / -1' } : undefined}>No scenes yet. Add a scene heading to see cards.</div>}
-      {scenes.map((s, i) => {
-        const seq = s.sequence !== lastSeq ? s.sequence : undefined;
-        lastSeq = s.sequence;
+      {scenes.map((sc) => {
+        const seq = sc.sequence !== lastSeq ? sc.sequence : undefined;
+        lastSeq = sc.sequence;
+        const isOpen = open.has(sc.id);
+        const body = sc.body.filter((l) => l.text.trim());
         return (
-          <div key={s.id} style={{ display: 'contents' }}>
-            {seq && wide && <div className={css.cardSeq}>{seq}</div>}
+          <div key={sc.id} style={{ display: 'contents' }}>
+            {seq && <div className={css.cardSeq}>{seq}</div>}
             <div
-              className={`${css.card} ${over === s.id ? css.cardDrop : ''}`}
+              className={`${css.card} ${sc.id === activeScene ? '' : css.cardIdle} ${over === sc.id ? css.cardDrop : ''}`}
               draggable
               data-testid="card"
-              onDragStart={() => setDrag(s.id)}
-              onDragOver={(e) => { e.preventDefault(); setOver(s.id); }}
-              onDragLeave={() => setOver((o) => (o === s.id ? null : o))}
-              onDrop={(e) => { e.preventDefault(); drop(s); }}
-              onClick={() => open(s)}
+              data-active={sc.id === activeScene || undefined}
+              onDragStart={() => setDrag(sc.id)}
+              onDragOver={(e) => { e.preventDefault(); setOver(sc.id); }}
+              onDragLeave={() => setOver((o) => (o === sc.id ? null : o))}
+              onDrop={(e) => { e.preventDefault(); drop(sc); }}
+              onClick={() => jump(sc)}
             >
-              <div className={css.cardHead}><span>{i + 1}</span><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.heading}</span></div>
-              <div className={css.cardBody}>{s.body.filter((l) => l.text.trim()).slice(0, wide ? 5 : 2).map((l) => (l.type === 'character' ? l.text.toUpperCase() : l.text)).join('\n')}</div>
+              <div className={css.cardHead}>
+                <span role="button" className={css.cardHeadBtn} title={isOpen ? 'Collapse card' : 'Expand card'} data-testid="card-expand" onClick={(e) => { e.stopPropagation(); toggle(sc.id); }}>
+                  <ChevronRight size={15} strokeWidth={3} style={{ transform: isOpen ? 'rotate(90deg)' : undefined }} />
+                </span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sc.heading}</span>
+                <span role="button" className={css.cardKebab} title="Card options" data-testid="card-menu" onClick={(e) => { e.stopPropagation(); setMenu(menu === sc.id ? null : sc.id); }}>
+                  <EllipsisVertical size={14} />
+                  {menu === sc.id && <div style={{ position: 'absolute', top: 18, right: 0, zIndex: 50, fontFamily: 'var(--ui-font)', fontWeight: 400 }}><MenuList items={cardMenu(sc)} onClose={() => setMenu(null)} /></div>}
+                </span>
+              </div>
+              {(isOpen || previews) && body.length > 0 && (
+                <div className={`${css.cardBody} ${isOpen ? css.cardFull : ''}`}>
+                  {(isOpen ? body : body.slice(0, wide ? 5 : 2)).map((l) => (l.type === 'character' ? `\n${l.text.toUpperCase()}` : l.text)).join('\n').trim()}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -196,11 +280,46 @@ export function moveScene(fromId: string, beforeId: string) {
 }
 
 export function CardsPanel() {
+  const docs = useApp((st) => st.docs);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [previews, setPreviews] = useState(() => localStorage.getItem('ud.cardPreviews') !== '0');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const pad = docs.find((d) => d.kind === 'pad');
+  useEffect(() => {
+    if (!menuOpen) return;
+    const down = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setMenuOpen(false); };
+    document.addEventListener('mousedown', down);
+    return () => document.removeEventListener('mousedown', down);
+  }, [menuOpen]);
+  const all = () => new Set(splitScenes(currentLines()).map((x) => x.id));
   return (
-    <PanelShell title="Cards">
+    <PanelShell
+      title="Cards"
+      menu={(
+        <div ref={ref} style={{ position: 'relative', display: 'flex' }}>
+          <span role="button" className={css.panelHeadBtn} onClick={() => setMenuOpen(!menuOpen)} data-testid="cards-menu"><EllipsisVertical size={15} /></span>
+          {menuOpen && (
+            <div className={`${css.menu} ${css.menuForm}`} style={{ position: 'absolute', top: 22, left: 0, zIndex: 50, fontWeight: 400 }}>
+              <label><input type="checkbox" checked={previews} onChange={(e) => { setPreviews(e.target.checked); localStorage.setItem('ud.cardPreviews', e.target.checked ? '1' : '0'); }} /> Show card previews</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="ud-btn" onClick={() => { setExpanded(all()); setMenuOpen(false); }} data-testid="cards-expand-all">Expand all</button>
+                <button className="ud-btn secondary" onClick={() => { setExpanded(new Set()); setMenuOpen(false); }}>Collapse all</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      footer={pad ? (
+        <button className={css.sectionRow} onClick={() => actions.switchDocument(pad.id)} title="Open the Private Pad" data-testid="cards-pad">
+          <ChevronRight size={11} fill="currentColor" />
+          Private Pad
+        </button>
+      ) : undefined}
+    >
       <Row icon={Plus} label="New Sequence" onClick={actions.insertSequence} />
       <div className={css.divider} />
-      <Cards />
+      <Cards previews={previews} expanded={expanded} setExpanded={setExpanded} />
     </PanelShell>
   );
 }

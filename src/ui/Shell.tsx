@@ -21,8 +21,8 @@ const CardsIcon = (({ size = 24 }: { size?: number | string }) => (
 )) as unknown as LucideIcon;
 
 const RAIL: { id: RailTab; label: string; icon: LucideIcon; tip: string }[] = [
-  { id: 'project', label: 'Project', icon: Files, tip: 'Project' },
-  { id: 'cards', label: 'Cards', icon: CardsIcon, tip: 'Cards' },
+  { id: 'project', label: 'Project', icon: Files, tip: 'Project Documents' },
+  { id: 'cards', label: 'Cards', icon: CardsIcon, tip: 'Cards & Private Pad' },
   { id: 'comments', label: 'Comments', icon: MessageSquareText, tip: 'Comments' },
   { id: 'analysis', label: 'Analysis', icon: ChartColumn, tip: 'Analysis' },
   { id: 'tools', label: 'Tools', icon: Wrench, tip: 'Tools & Revisions' },
@@ -52,7 +52,7 @@ function Rail() {
         <ArrowLeft size={16} strokeWidth={2.6} />
       </button>
       {RAIL.map((r) => (
-        <button key={r.id} className={`${css.railBtn} ${rail === r.id ? css.railBtnActive : ''}`} title={r.tip} onClick={() => pick(r.id)} data-testid={`rail-${r.id}`}>
+        <button key={r.id} className={`${css.railBtn} ${css.tip} ${rail === r.id ? css.railBtnActive : ''}`} data-tip={r.tip} onClick={() => pick(r.id)} data-testid={`rail-${r.id}`}>
           <r.icon size={24} strokeWidth={1.7} />
           {r.label}
           {r.id === 'project' && <span className={css.syncDot} style={{ background: dot }} />}

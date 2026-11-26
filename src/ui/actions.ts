@@ -266,6 +266,18 @@ export const actions = {
     await store.removeDocument(d);
     await refreshProject();
   },
+  copyDocumentToProject: async (d: DocumentFile) => {
+    await flushEditor();
+    const fresh = (await store.getDocument(d.id)) ?? d;
+    const name = await ask('Copy to New Project', { label: 'Project name', value: fresh.name, confirmText: 'Create' });
+    if (name === null) return;
+    const p = await store.createProject(name.trim() || fresh.name, {
+      lines: fresh.kind === 'titlePage' ? undefined : fresh.lines.map((l) => ({ ...l, id: store.newId() })),
+      titlePageLines: fresh.kind === 'titlePage' ? fresh.lines.map((l) => ({ ...l, id: store.newId() })) : undefined,
+      pdf: settings().pdf,
+    });
+    await openProject(p.id);
+  },
   titlePage: () => {
     const d = app().docs.find((x) => x.kind === 'titlePage');
     if (d) void switchDocument(d.id);

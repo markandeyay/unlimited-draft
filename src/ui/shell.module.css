@@ -116,3 +116,33 @@
 .sheetBackdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 89; }
 .sheetGroup { color: var(--muted); font-size: 11px; padding: 10px 12px 4px; text-transform: uppercase; letter-spacing: 0.04em; }
 .sheet .menuItem { height: 40px; font-size: 14px; }
+
+/* White tooltips like WriterDuet's, shown after a short delay. */
+.tip { position: relative; }
+.tip::after {
+  content: attr(data-tip); position: absolute; left: 0; top: calc(100% + 6px); z-index: 60; width: max-content; max-width: 380px;
+  background: #fff; color: #182026; font-family: var(--ui-font); font-size: 12px; font-weight: 600; line-height: 16px; text-align: left;
+  padding: 5px 9px; border-radius: 3px; box-shadow: 0 0 0 1px rgba(16, 22, 26, 0.1), 0 2px 4px rgba(16, 22, 26, 0.2), 0 8px 24px rgba(16, 22, 26, 0.2);
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.12s 0s, visibility 0s 0.12s; white-space: normal;
+}
+.tip:hover::after { opacity: 1; visibility: visible; transition: opacity 0.12s 0.6s, visibility 0s 0.6s; }
+.tipRight::after { left: auto; right: 0; }
+.rail .tip::after { top: calc(100% - 14px); left: 2px; white-space: nowrap; }
+.panel { container-type: inline-size; }
+.rowHint { color: var(--text-dim); font-size: 11px; flex: none; }
+@container (max-width: 210px) { .rowHint { display: none; } }
+
+/* Cards, WriterDuet style: header with an expand arrow, preview below, the current scene in white. */
+.cardHeadBtn { display: flex; align-items: center; color: inherit; flex: none; }
+.cardIdle { background: #c9ced3; }
+.cardIdle .cardHead { background: #c9ced3; }
+.cardFull { max-height: none; }
+.cardKebab { margin-left: auto; display: flex; color: inherit; position: relative; flex: none; }
+.card { position: relative; overflow: visible; }
+.card .cardHead { border-radius: 3px 3px 0 0; align-items: center; }
+.card .cardBody { border-top: 1px solid rgba(0, 0, 0, 0.12); color: #555; }
+.cardFull.cardBody { color: #111; }
+.sectionRow { display: flex; align-items: center; height: 36px; padding: 0 8px; color: #fff; font-weight: 700; gap: 4px; border-top: 1px solid var(--divider); width: 100%; flex: none; }
+.sectionRow:hover { background: rgba(255, 255, 255, 0.08); }
+.menuForm { padding: 8px 12px; color: #fff; font-size: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 200px; }
+.menuForm label { display: flex; align-items: center; gap: 8px; cursor: pointer; }

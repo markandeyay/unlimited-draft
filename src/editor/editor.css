@@ -135,3 +135,24 @@
 .ac-item { padding: 3px 10px; border-radius: 2px; cursor: pointer; white-space: nowrap; }
 .ac-item:hover { background: #e8eef3; }
 .ac-item.ac-active { background: #137cbd; color: #fff; }
+
+/* Hovered line: a fainter band than the current line. */
+.pm-page.pm-hover .el:hover { background-color: rgba(175, 180, 43, 0.06); }
+.pm-page.pm-hover .el.cur, .pm-page.pm-hover .el.cur:hover { background-color: var(--cur-line); }
+.pm-page .ProseMirror ::selection { background: #2f62c9; color: #fff; }
+
+/* Collapse arrow beside a scene heading: shown on hover, on the current line, and always when collapsed. */
+.pm-page .fold {
+  position: absolute; left: -28px; top: var(--sb); width: 18px; height: 16px; display: none;
+  font-family: Arial, sans-serif; font-size: 20px; line-height: 15px; font-weight: 400; text-indent: 0; text-align: center;
+  letter-spacing: 0; color: var(--page-fg); cursor: pointer; user-select: none;
+}
+.pm-page .el:hover > .fold, .pm-page .el.cur > .fold, .pm-page .el.folded > .fold { display: block; }
+.pm-page .fold:hover { color: #137cbd; }
+
+/* Comment button that follows the hovered line in the left margin. */
+.pm-page .gutter-cmt {
+  position: absolute; left: 20px; width: 20px; height: 16px; display: none; align-items: center; justify-content: center;
+  color: #8a959e; z-index: 3; padding: 0;
+}
+.pm-page .gutter-cmt:hover { color: #137cbd; }
