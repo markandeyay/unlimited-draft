@@ -19,14 +19,19 @@
   font-family: "Courier Prime", "Courier New", Courier, monospace;
   font-size: 16px;
   line-height: 16px;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+  line-break: auto;
   font-variant-ligatures: none;
   font-kerning: none;
   outline: none;
   caret-color: var(--page-fg);
-  overflow-wrap: normal;
   tab-size: 4;
 }
+/* Lines with unusual break points get explicit breaks from the layout engine. */
+.pm-page .el.nw { white-space: pre; overflow-wrap: normal; }
 .pm-page .ProseMirror::after { content: ""; display: block; clear: both; }
 
 .pm-page .el {
@@ -40,6 +45,7 @@
   --sb: 0px;
 }
 /* Space before is padding so it survives float clearance (dual dialogue). */
+.pm-page .el.sb0 { padding-top: 0; --sb: 0px; }
 .pm-page .el.sb1 { padding-top: 16px; --sb: 16px; }
 .pm-page .el.sb2 { padding-top: 32px; --sb: 32px; }
 .pm-page .el.sb3 { padding-top: 48px; --sb: 48px; }

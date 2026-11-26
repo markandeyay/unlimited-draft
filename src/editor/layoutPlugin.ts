@@ -26,6 +26,7 @@ export interface LayoutPluginState {
   sigs: Map<string, string>;
   options: LayoutPluginOptions;
   pageCount: number;
+  lastUsed: number;
 }
 
 export const layoutKey = new PluginKey<LayoutPluginState>('layout');
@@ -69,9 +70,22 @@ function pbDom(b: BreakInfo, inline: boolean, numberFirst: boolean): HTMLElement
   return el;
 }
 
-function signature(li: LineInfo | undefined, sn: string | undefined, side: string, rev: boolean, pb: boolean): string {
+/**
+ * Lines made only of plain words wrap the same way in the browser as in the engine, so they need no
+ * decorations. Text with other break opportunities (a hyphen or slash inside a word, non-ASCII
+ * punctuation) gets explicit line breaks from the engine instead.
+ */
+const UNSAFE_WRAP = /[^\x20-\x7E]|[-/|?!][^\s\d?!.,:;'")\]-]/;
+const unsafeCache = new WeakMap<PMNode, boolean>();
+function unsafeWrap(node: PMNode): boolean {
+  let u = unsafeCache.get(node);
+  if (u === undefined) { u = UNSAFE_WRAP.test(node.textContent); unsafeCache.set(node, u); }
+  return u;
+}
+
+function signature(li: LineInfo | undefined, sn: string | undefined, side: string, rev: boolean, pb: boolean, unsafe: boolean): string {
   if (!li) return 'hidden';
-  let s = `${li.spaceBefore}|${li.contd ? 1 : 0}|${li.wraps.join(',')}|${sn ?? ''}${sn ? side : ''}|${rev ? 1 : 0}`;
+  let s = `${li.spaceBefore}|${li.contd ? 1 : 0}|${unsafe ? li.wraps.join(',') : ''}|${sn ?? ''}${sn ? side : ''}|${rev ? 1 : 0}`;
   if (pb) {
     if (li.breakBefore) s += `|B${li.breakBefore.page},${li.breakBefore.filler},${li.breakBefore.more ? 1 : 0},${li.breakBefore.contdName ?? ''}`;
     for (const sp of li.splits) s += `|S${sp.offset},${sp.page},${sp.filler},${sp.more ? 1 : 0},${sp.contdName ?? ''}`;
@@ -84,13 +98,20 @@ function decosFor(pos: number, node: PMNode, li: LineInfo | undefined, o: Layout
   const end = pos + node.nodeSize;
   if (!li) return [Decoration.node(pos, end, { class: 'el-hidden' }, { id })];
   const out: Decoration[] = [];
-  const attrs: Record<string, string> = { class: `sb${li.spaceBefore}${li.contd ? ' contd' : ''}` };
+  const unsafe = unsafeWrap(node) && li.wraps.length > 0;
+  // Default spacing comes from CSS; a node decoration is only needed for exceptions.
+  const def = o.layout.geometry?.elements[elType(node)]?.spaceBefore ?? -1;
+  let cls = li.spaceBefore !== def ? `sb${li.spaceBefore}` : '';
+  if (li.contd) cls += ' contd';
+  if (unsafe) cls += ' nw';
+  const attrs: Record<string, string> = {};
+  if (cls) attrs.class = cls.trim();
   const sn = o.sceneNumbers?.get(id);
   if (sn && node.type.name === 'scene') {
     if (o.sceneNumberSide !== 'right') attrs['data-snl'] = sn;
     if (o.sceneNumberSide !== 'left') attrs['data-snr'] = sn;
   }
-  out.push(Decoration.node(pos, end, attrs, { id }));
+  if (cls || sn) out.push(Decoration.node(pos, end, attrs, { id }));
   if (node.attrs.revisionMarked) {
     out.push(Decoration.widget(pos + 1, () => {
       const s = document.createElement('span');
@@ -112,7 +133,7 @@ function decosFor(pos: number, node: PMNode, li: LineInfo | undefined, o: Layout
       out.push(Decoration.widget(pos + 1 + off, () => pbDom(sp, true, o.numberFirstPage), {
         id, side: -1, key: `sp-${id}-${off}-${sp.page}-${sp.filler}-${sp.contdName ?? ''}`, ignoreSelection: true,
       }));
-    } else {
+    } else if (unsafe) {
       out.push(Decoration.widget(pos + 1 + off, () => {
         const br = document.createElement('br');
         br.className = 'wr';
@@ -157,11 +178,11 @@ export function createLayoutPlugin(initial: LayoutPluginOptions) {
     doc.forEach((node, pos) => {
       const id = node.attrs.id as string;
       const li = result.info.get(id);
-      sigs.set(id, signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks));
+      sigs.set(id, signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks, unsafeWrap(node)));
       for (const d of decosFor(pos, node, li, o)) decos.push(d);
     });
     if (o.showPageBreaks) decos.push(endDeco(doc, result, linesPerPage));
-    return { result, decos: DecorationSet.create(doc, decos), sigs, options: o, pageCount: result.pages.length };
+    return { result, decos: DecorationSet.create(doc, decos), sigs, options: o, pageCount: result.pages.length, lastUsed: result.pages[result.pages.length - 1].usedRows };
   }
 
   function update(tr: Transaction, prev: LayoutPluginState): LayoutPluginState {
@@ -184,7 +205,7 @@ export function createLayoutPlugin(initial: LayoutPluginOptions) {
       const id = node.attrs.id as string;
       const end = pos + node.nodeSize;
       const li = result.info.get(id);
-      const sig = signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks);
+      const sig = signature(li, o.sceneNumbers?.get(id), o.sceneNumberSide, node.attrs.revisionMarked, o.showPageBreaks, unsafeWrap(node));
       sigs.set(id, sig);
       let touched = prev.sigs.get(id) !== sig;
       if (!touched) for (const [a, b] of dirty) if (a <= end && b >= pos) { touched = true; break; }
@@ -193,12 +214,19 @@ export function createLayoutPlugin(initial: LayoutPluginOptions) {
         for (const d of decosFor(pos, node, li, o)) add.push(d);
       }
     });
-    // Decorations whose line disappeared (joined or deleted), and the end filler.
-    for (const d of decos.find(undefined, undefined, (spec) => spec.id === '__end' || !sigs.has(spec.id))) remove.push(d);
-    if (o.showPageBreaks) add.push(endDeco(doc, result, linesPerPage));
+    // Decorations whose line disappeared (joined or deleted).
+    let idsChanged = sigs.size !== prev.sigs.size;
+    if (!idsChanged && dirty.length) for (const id of sigs.keys()) if (!prev.sigs.has(id)) { idsChanged = true; break; }
+    if (idsChanged) for (const d of decos.find(undefined, undefined, (spec) => spec.id !== '__end' && !sigs.has(spec.id))) remove.push(d);
+    // The end filler only changes when the last page's used rows change.
+    const lastUsed = result.pages[result.pages.length - 1].usedRows;
+    if (lastUsed !== prev.lastUsed || idsChanged || !o.showPageBreaks) {
+      for (const d of decos.find(Math.max(0, doc.content.size - 1), doc.content.size, (spec) => spec.id === '__end')) remove.push(d);
+      if (o.showPageBreaks) add.push(endDeco(doc, result, linesPerPage));
+    }
     if (remove.length) decos = decos.remove(remove);
     if (add.length) decos = decos.add(doc, add);
-    return { result, decos, sigs, options: o, pageCount: result.pages.length };
+    return { result, decos, sigs, options: o, pageCount: result.pages.length, lastUsed };
   }
 
   return new Plugin<LayoutPluginState>({

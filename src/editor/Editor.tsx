@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../app/store';
 import { CHAR_PX, ELEMENT_TYPES, type ElementType, type PageGeometry } from '../layout/geometry';
 import { computeSceneNumbers } from '../layout/sceneNumbers';
-import { geometryFromSettings, layoutOptionsFor, useSettings } from '../settings/settings';
+import { geometryFor, layoutOptionsFor, useSettings } from '../settings/settings';
 import { recordLocalVersion } from '../history/history';
 import { deviceName, saveDocument } from '../storage/db';
 import type { DocumentFile, Line } from '../storage/models';
@@ -28,13 +28,13 @@ export function geometryCss(g: PageGeometry): string {
   for (const t of ELEMENT_TYPES) {
     const s = g.elements[t];
     const x = (s.left - base) * CHAR_PX;
-    css += `.pm-page .el-${t}{margin-left:${x}px;--ex:${x}px;width:${s.width * CHAR_PX}px;`;
+    css += `.pm-page .el-${t}{margin-left:${x}px;--ex:${x}px;width:${s.width * CHAR_PX + 0.5}px;`;
     css += `text-align:${s.align};text-transform:${s.uppercase ? 'uppercase' : 'none'};font-weight:${s.bold ? 700 : 400};`;
     css += `font-style:${s.italic ? 'italic' : 'normal'};text-decoration:${s.underline ? 'underline' : 'none'};`;
-    css += `text-indent:${s.hang ? -s.hang * CHAR_PX : 0}px}`;
+    css += `text-indent:${s.hang ? -s.hang * CHAR_PX : 0}px;padding-top:${s.spaceBefore * 16}px;--sb:${s.spaceBefore * 16}px}`;
   }
   const d = g.dual;
-  const lx = (d.leftCol - base) * CHAR_PX, rx = (d.rightCol - base) * CHAR_PX, w = d.width * CHAR_PX, pi = d.parenIndent * CHAR_PX;
+  const lx = (d.leftCol - base) * CHAR_PX, rx = (d.rightCol - base) * CHAR_PX, w = d.width * CHAR_PX + 0.5, pi = d.parenIndent * CHAR_PX;
   css += `.pm-page .el[data-dual=left]{float:left;clear:left;margin-left:${lx}px;--ex:${lx}px;width:${w}px}`;
   css += `.pm-page .el[data-dual=right]{clear:none;margin-left:${rx}px;--ex:${rx}px;width:${w}px}`;
   css += `.pm-page .el-character[data-dual]{text-align:center}`;
@@ -59,7 +59,7 @@ export function Editor({ document: docFile, readOnly = false }: { document: Docu
   const hideNotes = useApp((s) => s.hideNotes);
   const filter = useApp((s) => s.filter);
 
-  const geometry = useMemo(() => geometryFromSettings(settings), [settings]);
+  const geometry = useMemo(() => geometryFor(settings, docFile.kind), [settings, docFile.kind]);
   const css = useMemo(() => geometryCss(geometry), [geometry]);
 
   const pluginOptions = (doc: DocumentFile, lines?: Line[]): LayoutPluginOptions => {

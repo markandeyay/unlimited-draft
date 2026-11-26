@@ -122,9 +122,18 @@ export function geometryFromSettings(s: Settings): PageGeometry {
   return g;
 }
 
+/** WriterDuet centers title page text in a box 400 pt wide starting at the left margin (measured from its PDF). */
+export const TITLE_PAGE_TEXT_WIDTH = 400 / 7.2;
+
+export function geometryFor(s: Settings, kind?: DocumentFile['kind']): PageGeometry {
+  const g = geometryFromSettings(s);
+  if (kind === 'titlePage') g.elements.text = { ...g.elements.text, width: TITLE_PAGE_TEXT_WIDTH };
+  return g;
+}
+
 export function layoutOptionsFor(s: Settings, doc?: Pick<DocumentFile, 'settings' | 'kind'>): Partial<LayoutOptions> {
   return {
-    geometry: geometryFromSettings(s),
+    geometry: geometryFor(s, doc?.kind),
     autoContd: s.editing.autoContd && doc?.kind !== 'titlePage',
     moreText: s.production.moreText,
     contdText: s.production.contdText,

@@ -1,4 +1,5 @@
 import { toggleMark } from 'prosemirror-commands';
+import { closeHistory } from 'prosemirror-history';
 import type { Node as PMNode } from 'prosemirror-model';
 import { type Command, type EditorState, NodeSelection, TextSelection, type Transaction } from 'prosemirror-state';
 import { ulid } from 'ulid';
@@ -247,7 +248,7 @@ export function moveSelection(dir: -1 | 1): Command {
       tr.insert(from, slice.content);
       tr.setSelection(TextSelection.create(tr.doc, anchor + next.nodeSize, head + next.nodeSize));
     }
-    if (dispatch) dispatch(tr.scrollIntoView());
+    if (dispatch) dispatch(closeHistory(tr).scrollIntoView());
     return true;
   };
 }

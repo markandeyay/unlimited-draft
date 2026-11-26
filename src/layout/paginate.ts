@@ -158,7 +158,7 @@ export function createLayoutEngine() {
     const display = displayText(line.type, line.text, spec, line.omitted);
     const segs = line.type === 'image'
       ? [{ start: 0, end: 0 }]
-      : wrapText(display, spec.width, spec.width + spec.hang);
+      : wrapText(display, Math.floor(spec.width), Math.floor(spec.width) + spec.hang);
     const w: Wrapped = { line, spec, display, segs, key };
     cache.set(line.id, w);
     return w;

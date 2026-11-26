@@ -19,7 +19,7 @@ export async function extractPdfPages(data: Uint8Array, pdfjs: PdfJsLike): Promi
     const rows = new Map<number, { x: number; w: number; str: string }[]>();
     for (const it of tc.items as any[]) {
       if (!it.str || !it.str.trim()) continue;
-      const y = Math.round(it.transform[5] * 2) / 2;
+      const y = it.transform[5] as number;
       let key = y;
       for (const k of rows.keys()) if (Math.abs(k - y) <= 2) { key = k; break; }
       const arr = rows.get(key) ?? [];

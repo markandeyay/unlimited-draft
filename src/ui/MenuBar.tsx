@@ -253,7 +253,7 @@ export function MenuBar() {
         <div
           key={m.label}
           className={`${css.menuTitle} ${open === i ? css.menuTitleOpen : ''}`}
-          onMouseDown={(e) => { e.preventDefault(); setOpen(open === i ? null : i); }}
+          onMouseDown={(e) => { e.preventDefault(); if ((e.target as HTMLElement).closest('[role=menu]')) return; setOpen(open === i ? null : i); }}
           onMouseEnter={() => { if (open !== null) setOpen(i); }}
         >
           {m.label}
