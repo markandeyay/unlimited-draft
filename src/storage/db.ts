@@ -95,7 +95,7 @@ export async function markDirty(...keys: string[]) {
 const dirtyListeners = new Set<() => void>();
 export function onDirty(fn: () => void) { dirtyListeners.add(fn); return () => dirtyListeners.delete(fn); }
 
-export async function createProject(name: string, opts: { folderId?: string; lines?: Line[]; pdf?: Settings['pdf']; titlePageLines?: Line[]; extraDocs?: { name: string; lines: Line[] }[] } = {}): Promise<ProjectFile> {
+export async function createProject(name: string, opts: { folderId?: string; lines?: Line[]; pdf?: Settings['pdf']; titlePageLines?: Line[]; pageCount?: number; extraDocs?: { name: string; lines: Line[] }[] } = {}): Promise<ProjectFile> {
   const id = newId();
   const at = nowIso();
   const script = makeDoc(id, 'script', 'Script', opts.lines?.length ? opts.lines : [makeLine('action', '')]);
@@ -104,7 +104,7 @@ export async function createProject(name: string, opts: { folderId?: string; lin
   const extra = (opts.extraDocs ?? []).map((d) => makeDoc(id, 'custom', d.name, d.lines));
   const project: ProjectFile = {
     schema: 1, id, name, path: `${slugify(name)}-${id.slice(-6).toLowerCase()}`, folderId: opts.folderId,
-    createdAt: at, updatedAt: at, openedAt: at, documentOrder: [script.id, pad.id, title.id, ...extra.map((d) => d.id)], pageCount: 1,
+    createdAt: at, updatedAt: at, openedAt: at, documentOrder: [script.id, pad.id, title.id, ...extra.map((d) => d.id)], pageCount: opts.pageCount ?? 1,
   };
   await db.transaction('rw', db.projects, db.documents, db.syncQueue, async () => {
     await db.projects.put(project);

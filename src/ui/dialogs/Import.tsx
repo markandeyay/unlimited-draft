@@ -5,7 +5,8 @@ import { ELEMENT_LABELS, TOOLBAR_ORDER } from '../../editor/flow';
 import type { PlainLine } from '../../import/fountain';
 import { type Imported, importBytes } from '../../import/writerduet';
 import type { ElementType } from '../../layout/geometry';
-import { useSettings } from '../../settings/settings';
+import { createLayoutEngine } from '../../layout/paginate';
+import { layoutOptionsFor, useSettings } from '../../settings/settings';
 import * as store from '../../storage/db';
 import { Dialog, Field } from '../Dialogs';
 import css from '../dialogs.module.css';
@@ -57,8 +58,12 @@ export default function ImportDialog() {
   const create = async () => {
     if (!lines) return;
     setBusy(true);
+    const made = lines.map(toLine);
+    const settings = useSettings.getState().settings;
+    const pageCount = createLayoutEngine().layout(made.map((l) => ({ id: l.id, type: l.type, text: l.text, dual: l.dual, align: l.align })), { ...layoutOptionsFor(settings), hide: new Set(['note', 'outline', 'sequence'] as const) }).pages.length;
     const p = await store.createProject(name.trim() || 'Imported Script', {
-      lines: lines.map(toLine),
+      lines: made,
+      pageCount,
       titlePageLines: titlePage?.map(toLine),
       pdf: useSettings.getState().settings.pdf,
     });

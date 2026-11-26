@@ -7,7 +7,7 @@ import { CHAR_PX, ELEMENT_TYPES, type ElementType, GLYPH_PX, LETTER_SPACING_PX, 
 import { computeSceneNumbers } from '../layout/sceneNumbers';
 import { geometryFor, layoutOptionsFor, useSettings } from '../settings/settings';
 import { recordLocalVersion } from '../history/history';
-import { db, deviceName, saveDocument } from '../storage/db';
+import { db, deviceName, saveDocument, updateProject } from '../storage/db';
 import type { DocumentFile, Line } from '../storage/models';
 import { autocompletePlugin } from './autocomplete';
 import { jumpToLine } from './commands';
@@ -205,6 +205,13 @@ export function Editor({ document: docFile, readOnly = false }: { document: Docu
     });
     viewRef.current = view;
     setView(view, save);
+    if (docFile.kind === 'script') {
+      const pages = layoutKey.getState(view.state)?.pageCount;
+      const proj = useApp.getState().project;
+      if (pages && proj && proj.id === docFile.projectId && proj.pageCount !== pages) {
+        void updateProject(proj.id, (x) => { x.pageCount = pages; }, false).then(() => useApp.setState((st) => (st.project?.id === proj.id ? { project: { ...st.project, pageCount: pages } } : {})));
+      }
+    }
     pushCursor(view.state);
 
     const lineId = (useApp.getState().route as any).lineId as string | undefined;

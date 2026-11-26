@@ -8,7 +8,10 @@ import { addToDictionary, checkDocument, ignoreWord, suggest, toRanges } from '.
 
 /** Underlines misspellings after each save and offers suggestions on right click. */
 export function SpellLayer() {
-  const enabled = useSettings((s) => s.settings.editing.spellCheck);
+  const on = useSettings((s) => s.settings.editing.spellCheck);
+  // The title page is mostly names, so it is not spell checked.
+  const isTitle = useApp((s) => s.docs.find((d) => d.id === s.activeDocId)?.kind === 'titlePage');
+  const enabled = on && !isTitle;
   const docVersion = useApp((s) => s.docVersion);
   const docId = useApp((s) => s.activeDocId);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
