@@ -12,3 +12,6 @@ docs/writerduet-reference/*.jpg
 docs/writerduet-reference/*.png
 docs/writerduet-reference/*.pdf
 tests/tmp
+
+.vercel
+.env*
