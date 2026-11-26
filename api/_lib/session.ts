@@ -55,6 +55,11 @@ export function getSession(req: VercelRequest): Session | null {
   return allowed && s.login.toLowerCase() === allowed ? s : null;
 }
 
+/** Like getSession, but a missing COOKIE_SECRET reads as signed out instead of throwing. */
+export function safeSession(req: VercelRequest): Session | null {
+  try { return getSession(req); } catch { return null; }
+}
+
 export function origin(req: VercelRequest): string {
   const host = (req.headers['x-forwarded-host'] as string | undefined) ?? req.headers.host ?? 'localhost';
   const proto = (req.headers['x-forwarded-proto'] as string | undefined) ?? (host.startsWith('localhost') ? 'http' : 'https');

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getSession, noStore, origin } from './_lib/session.js';
+import { noStore, origin, safeSession } from './_lib/session.js';
 
 /** True when the proxy may forward this path: only the scripts repo and /user. */
 export function pathAllowed(path: string, repo: string): boolean {
@@ -12,8 +12,7 @@ export function pathAllowed(path: string, repo: string): boolean {
 // ALL /api/github/*: thin proxy to api.github.com that attaches the token from the session cookie.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   noStore(res);
-  let session = null;
-  try { session = getSession(req); } catch { session = null; }
+  const session = safeSession(req);
   if (!session) { res.status(401).json({ message: 'Not signed in' }); return; }
 
   const method = (req.method ?? 'GET').toUpperCase();

@@ -65,7 +65,7 @@ function fromJson(text: string): Imported | null {
 
 /** Parse the text of a script file by sniffing its format. */
 export function importText(text: string, fileName = ''): Imported {
-  const t = text.replace(/^﻿/, '');
+  const t = text.replace(/^\uFEFF/, '');
   if (/<FinalDraft\b/i.test(t) || /\.fdx$/i.test(fileName)) { const r = parseFdx(t); return { ...r, format: 'Final Draft (FDX)' }; }
   if (/^\s*[{[]/.test(t)) { const r = fromJson(t); if (r) return r; }
   const r = parseFountain(t);
